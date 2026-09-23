@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Abhimithra Peddi — AI/ML Engineer</title>
+  <meta name="description" content="AI/ML Engineer — Generative AI, LLMs & Agentic Systems">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/favicon.svg') }}">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Abhimithra Peddi — AI/ML Engineer">
+  <meta property="og:description" content="AI/ML Engineer specializing in Generative AI, LLMs, Agentic Systems & RAG pipelines. 6+ years of experience.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="{{ url_for('static', filename='img/profile.jpg', _external=True) }}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Abhimithra Peddi — AI/ML Engineer">
+  <meta name="twitter:description" content="AI/ML Engineer specializing in Generative AI, LLMs, Agentic Systems & RAG pipelines.">
+
+  <!-- Fonts (preconnect + swap for performance) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<!-- DUNGEON GATE SPLASH -->
+<div id="gate-overlay" role="dialog" aria-label="Welcome splash screen" tabindex="0">
+  <div class="gate-portal">
+    <div class="gate-ring gate-ring-2"></div>
+    <div class="gate-ring gate-ring-1"></div>
+    <div class="gate-ring gate-ring-3"></div>
+    <div class="gate-core">
+      <div class="gate-core-text">Dungeon Gate Detected</div>
+      <div class="gate-rank">S</div>
+      <div class="gate-core-text">Rank: S-Class Hunter</div>
+      <div class="gate-enter" role="button">Enter Dungeon</div>
+    </div>
+  </div>
+</div>
+
+<!-- SYSTEM ALERT -->
+<div class="system-alert" id="systemAlert" role="status" aria-live="polite">
+  <div class="system-alert-icon">&#9889;</div>
+  <div class="system-alert-title">System Notification</div>
+  <div class="system-alert-msg" id="alertMsg">Player data loaded successfully.</div>
+  <div class="system-alert-sub" id="alertSub">Welcome, S-Rank Hunter.</div>
+</div>
+
+<!-- THEME TOGGLE -->
+<button class="theme-toggle" id="themeToggle" aria-label="Toggle light/dark theme">
+  <svg class="theme-icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  <svg class="theme-icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+
+<!-- BACK TO TOP -->
+<button class="back-to-top" id="backToTop" aria-label="Scroll back to top">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+</button>
+
+<!-- SHADOW CURSOR AURA -->
+<div id="shadow-aura"></div>
+
+<!-- SHADOW SOLDIERS -->
+<canvas class="shadow-soldiers" id="shadowSoldiers" aria-hidden="true"></canvas>
+
+<canvas id="particles" aria-hidden="true"></canvas>
+<div class="power-display" id="powerDisplay"><span class="power-dot"></span><span>SCROLL: <span id="scrollPct">0</span>%</span></div>
+
+<!-- ═══ STEP TRACKER (side nav) ═══ -->
+<nav class="step-tracker" id="stepTracker" aria-label="Section navigation">
+  <a href="#step-identity" class="step-dot active" data-step="1" title="Player Identity"><span class="step-label">Identity</span></a>
+  <a href="#step-summary" class="step-dot" data-step="2" title="Professional Summary"><span class="step-label">Summary</span></a>
+  <a href="#step-skills" class="step-dot" data-step="3" title="Technical Skills"><span class="step-label">Skills</span></a>
+  <a href="#step-experience" class="step-dot" data-step="4" title="Experience"><span class="step-label">Experience</span></a>
+  <a href="#step-projects" class="step-dot" data-step="5" title="Key Projects"><span class="step-label">Projects</span></a>
+  <a href="#step-education" class="step-dot" data-step="6" title="Education"><span class="step-label">Education</span></a>
+</nav>
+
+<div class="main">
+  <div class="system-notif reveal">A new player has entered the field</div>
+
+  <!-- ═══ STEP 1: PLAYER IDENTITY ═══ -->
+  <section class="panel hero reveal" id="step-identity" data-step="1">
+    <div class="panel-label">Player Status — S-Rank</div>
+    <div class="step-badge">01 <span class="step-badge-label">// PLAYER IDENTITY</span></div>
+    <div class="hero-content">
+      <div class="avatar-container reveal-scale">
+        <div class="avatar-ring"></div>
+        <div class="avatar-ring-2"></div>
+        <img class="avatar-img" src="{{ url_for('static', filename='img/profile.jpg') }}" alt="Abhimithra Peddi" loading="eager">
+      </div>
+      <div class="hero-rank">S-Rank Hunter</div>
+      <h1>ABHIMITHRA PEDDI</h1>
+      <div class="hero-title typing">AI / Machine Learning Engineer</div>
+      <div class="hero-stats" id="heroStats">
+        <div class="hero-stat"><div class="hero-stat-val"><span class="counter" data-target="6">0</span>+</div><div class="hero-stat-label">Years EXP</div></div>
+        <div class="hero-stat"><div class="hero-stat-val"><span class="counter" data-target="80">0</span>%+</div><div class="hero-stat-label">Search Time Reduced</div></div>
+        <div class="hero-stat"><div class="hero-stat-val"><span class="counter" data-target="8">0</span></div><div class="hero-stat-label">Dungeons Cleared</div></div>
+        <div class="hero-stat"><div class="hero-stat-val"><span class="counter" data-target="25">0</span>%</div><div class="hero-stat-label">Efficiency Boost</div></div>
+      </div>
+      <div class="contact-bar">
+        <a href="mailto:abhimithrapeddi07@gmail.com">Email</a>
+        <a href="https://linkedin.com/in/abhi-mithra-peddi624b64158" target="_blank" rel="noopener">LinkedIn</a>
+        <a href="https://github.com/abhimithra02" target="_blank" rel="noopener">GitHub</a>
+        <a href="tel:+919603446511">+91 96034 46511</a>
+        <a href="{{ url_for('static', filename='resume/Abhimithra_Peddi_Resume.pdf') }}" download class="resume-btn">Download Resume</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="glitch-line"></div>
+
+  <!-- ═══ STEP 2: PROFESSIONAL SUMMARY ═══ -->
+  <section class="panel reveal" id="step-summary" data-step="2">
+    <div class="panel-label">Intel Report — Mission Briefing</div>
+    <div class="step-badge">02 <span class="step-badge-label">// PROFESSIONAL SUMMARY</span></div>
+    <h2 class="section-header" data-icon="&#128220;">Professional Summary</h2>
+    <div class="summary-content">
+      <p class="summary-text">
+        Designing agentic AI workflows where LLM-driven agents invoke tools via function calling to automate at scale.
+        Building RAG document intelligence systems with hybrid Vector + BM25 retrieval.
+        Owning both the modelling and the infrastructure — from SageMaker pipelines to Flask REST services.
+      </p>
+      <div class="summary-highlights stagger-children">
+        <div class="summary-highlight">
+          <span class="highlight-icon">&#9889;</span>
+          <div>
+            <div class="highlight-title">Agentic AI Architect</div>
+            <div class="highlight-desc">Multi-agent orchestration with function calling, deterministic fallbacks, and tool-use pipelines</div>
+          </div>
+        </div>
+        <div class="summary-highlight">
+          <span class="highlight-icon">&#128269;</span>
+          <div>
+            <div class="highlight-title">RAG &amp; Document Intelligence</div>
+            <div class="highlight-desc">Hybrid Vector + BM25 retrieval reducing manual search by 80%+ across enterprise knowledge bases</div>
+          </div>
+        </div>
+        <div class="summary-highlight">
+          <span class="highlight-icon">&#9881;</span>
+          <div>
+            <div class="highlight-title">Full-Stack ML Engineer</div>
+            <div class="highlight-desc">End-to-end ownership — model training, SageMaker pipelines, Flask APIs, AWS deployment &amp; monitoring</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="glitch-line"></div>
+
+  <!-- ═══ STEP 3: TECHNICAL SKILLS ═══ -->
+  <section class="panel reveal" id="step-skills" data-step="3">
+    <div class="panel-label">Ability Stats</div>
+    <div class="step-badge">03 <span class="step-badge-label">// TECHNICAL SKILLS</span></div>
+    <h2 class="section-header" data-icon="&#9876;">Technical Skills</h2>
+    <div class="skills-grid">
+      <div>
+        <div class="skill-category">
+          <div class="skill-cat-title">Generative AI &amp; LLMs</div>
+          <div class="skill-row" role="progressbar" aria-label="LLM Dev" aria-valuenow="95" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">LLM Dev</span><div class="skill-bar-track"><div class="skill-bar-fill blue" data-level="95"></div></div><span class="skill-level">95</span></div>
+          <div class="skill-row" role="progressbar" aria-label="Prompt Engineering" aria-valuenow="92" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">Prompt Eng.</span><div class="skill-bar-track"><div class="skill-bar-fill blue" data-level="92"></div></div><span class="skill-level">92</span></div>
+          <div class="skill-row" role="progressbar" aria-label="RAG / Embeddings" aria-valuenow="93" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">RAG / Embeddings</span><div class="skill-bar-track"><div class="skill-bar-fill blue" data-level="93"></div></div><span class="skill-level">93</span></div>
+          <div class="skill-row" role="progressbar" aria-label="LangChain" aria-valuenow="90" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">LangChain</span><div class="skill-bar-track"><div class="skill-bar-fill blue" data-level="90"></div></div><span class="skill-level">90</span></div>
+        </div>
+        <div class="skill-category">
+          <div class="skill-cat-title">Agentic AI</div>
+          <div class="skill-row" role="progressbar" aria-label="AI Agents" aria-valuenow="94" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">AI Agents</span><div class="skill-bar-track"><div class="skill-bar-fill purple" data-level="94"></div></div><span class="skill-level">94</span></div>
+          <div class="skill-row" role="progressbar" aria-label="Function Calling" aria-valuenow="91" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">Function Calling</span><div class="skill-bar-track"><div class="skill-bar-fill purple" data-level="91"></div></div><span class="skill-level">91</span></div>
+          <div class="skill-row" role="progressbar" aria-label="Task Orchestration" aria-valuenow="89" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">Task Orchestration</span><div class="skill-bar-track"><div class="skill-bar-fill purple" data-level="89"></div></div><span class="skill-level">89</span></div>
+        </div>
+        <div class="skill-category">
+          <div class="skill-cat-title">Cloud &amp; Deployment</div>
+          <div class="skill-row" role="progressbar" aria-label="AWS" aria-valuenow="90" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">AWS</span><div class="skill-bar-track"><div class="skill-bar-fill gold" data-level="90"></div></div><span class="skill-level">90</span></div>
+          <div class="skill-row" role="progressbar" aria-label="SageMaker" aria-valuenow="87" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">SageMaker</span><div class="skill-bar-track"><div class="skill-bar-fill gold" data-level="87"></div></div><span class="skill-level">87</span></div>
+          <div class="skill-row" role="progressbar" aria-label="Docker / CI-CD" aria-valuenow="82" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">Docker / CI-CD</span><div class="skill-bar-track"><div class="skill-bar-fill gold" data-level="82"></div></div><span class="skill-level">82</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="skill-category">
+          <div class="skill-cat-title">ML &amp; Deep Learning</div>
+          <div class="skill-row" role="progressbar" aria-label="PyTorch" aria-valuenow="90" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">PyTorch</span><div class="skill-bar-track"><div class="skill-bar-fill cyan" data-level="90"></div></div><span class="skill-level">90</span></div>
+          <div class="skill-row" role="progressbar" aria-label="TensorFlow" aria-valuenow="88" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">TensorFlow</span><div class="skill-bar-track"><div class="skill-bar-fill cyan" data-level="88"></div></div><span class="skill-level">88</span></div>
+          <div class="skill-row" role="progressbar" aria-label="NLP" aria-valuenow="91" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">NLP</span><div class="skill-bar-track"><div class="skill-bar-fill cyan" data-level="91"></div></div><span class="skill-level">91</span></div>
+          <div class="skill-row" role="progressbar" aria-label="Computer Vision" aria-valuenow="85" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">Computer Vision</span><div class="skill-bar-track"><div class="skill-bar-fill cyan" data-level="85"></div></div><span class="skill-level">85</span></div>
+        </div>
+        <div class="skill-category">
+          <div class="skill-cat-title">APIs &amp; Backend</div>
+          <div class="skill-row" role="progressbar" aria-label="Python" aria-valuenow="96" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">Python</span><div class="skill-bar-track"><div class="skill-bar-fill blue" data-level="96"></div></div><span class="skill-level">96</span></div>
+          <div class="skill-row" role="progressbar" aria-label="Flask / Django" aria-valuenow="88" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">Flask / Django</span><div class="skill-bar-track"><div class="skill-bar-fill blue" data-level="88"></div></div><span class="skill-level">88</span></div>
+          <div class="skill-row" role="progressbar" aria-label="REST APIs" aria-valuenow="90" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">REST APIs</span><div class="skill-bar-track"><div class="skill-bar-fill blue" data-level="90"></div></div><span class="skill-level">90</span></div>
+          <div class="skill-row" role="progressbar" aria-label="React.js" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">React.js</span><div class="skill-bar-track"><div class="skill-bar-fill blue" data-level="75"></div></div><span class="skill-level">75</span></div>
+        </div>
+        <div class="skill-category">
+          <div class="skill-cat-title">Data &amp; Databases</div>
+          <div class="skill-row" role="progressbar" aria-label="SQL / MySQL" aria-valuenow="88" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">SQL / MySQL</span><div class="skill-bar-track"><div class="skill-bar-fill gold" data-level="88"></div></div><span class="skill-level">88</span></div>
+          <div class="skill-row" role="progressbar" aria-label="MongoDB" aria-valuenow="85" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">MongoDB</span><div class="skill-bar-track"><div class="skill-bar-fill gold" data-level="85"></div></div><span class="skill-level">85</span></div>
+          <div class="skill-row" role="progressbar" aria-label="Pinecone" aria-valuenow="88" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">Pinecone</span><div class="skill-bar-track"><div class="skill-bar-fill gold" data-level="88"></div></div><span class="skill-level">88</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="glitch-line"></div>
+
+  <!-- ═══ STEP 4: EXPERIENCE ═══ -->
+  <section class="panel reveal" id="step-experience" data-step="4">
+    <div class="panel-label">Quest Log — Completed Missions</div>
+    <div class="step-badge">04 <span class="step-badge-label">// EXPERIENCE</span></div>
+    <h2 class="section-header" data-icon="&#128220;">Experience</h2>
+    <div class="quest-log stagger-children">
+
+      <div class="quest">
+        <div class="quest-status cleared">Cleared</div>
+        <div class="quest-title">Machine Learning Engineer</div>
+        <div class="quest-org">vSplash Techlabs Private Limited, Hyderabad</div>
+        <div class="quest-time">Sep 2023 — Sep 2026</div>
+        <div class="quest-details">
+          <div class="quest-detail">Built an Agentic AI-powered QA automation platform — LLM-driven agents invoke validation tools through function calling with deterministic rule-based fallback</div>
+          <div class="quest-detail">Designed a meta-model validation layer that scores site quality and flags issues for human review</div>
+          <div class="quest-detail">Engineered advanced prompt templates with strict output parsing, removing hallucinated output from downstream pipelines</div>
+          <div class="quest-detail">Optimised GenAI API integrations with token management, dynamic prompt truncation, and response caching</div>
+          <div class="quest-detail">Deployed on AWS (EC2, Lambda, S3, RDS) with SageMaker retraining pipelines and MongoDB-backed audit logging</div>
+        </div>
+      </div>
+
+      <div class="quest">
+        <div class="quest-status cleared">Cleared</div>
+        <div class="quest-title">Data Scientist</div>
+        <div class="quest-org">Young Minds Technology Solutions Pvt. Ltd., Hyderabad</div>
+        <div class="quest-time">Sep 2021 — Aug 2023</div>
+        <div class="quest-details">
+          <div class="quest-detail">Built predictive and deep learning models for business forecasting end-to-end</div>
+          <div class="quest-detail">Extended into computer vision with OpenCV for structured data extraction from images</div>
+          <div class="quest-detail">Built Flask and Django applications enabling business teams to consume model outputs directly</div>
+        </div>
+      </div>
+
+      <div class="quest">
+        <div class="quest-status cleared">Cleared</div>
+        <div class="quest-title">Data Science Intern</div>
+        <div class="quest-org">Innomatics Research Labs, Hyderabad</div>
+        <div class="quest-time">Jan 2021 — Apr 2021</div>
+        <div class="quest-details">
+          <div class="quest-detail">Performed EDA and feature engineering on large financial datasets</div>
+          <div class="quest-detail">Built and refined loan-decision models to client-presentable precision</div>
+        </div>
+      </div>
+
+      <div class="quest">
+        <div class="quest-status cleared">Cleared</div>
+        <div class="quest-title">HR Associate</div>
+        <div class="quest-org">Tenpath Solutions, Hyderabad</div>
+        <div class="quest-time">Aug 2018 — Nov 2020</div>
+        <div class="quest-details">
+          <div class="quest-detail">Managed end-to-end recruitment for US and Canadian clients across technical and non-technical roles</div>
+          <div class="quest-detail">Built foundation in stakeholder communication and client management that transferred to ML roles</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <div class="glitch-line"></div>
+
+  <!-- ═══ STEP 5: KEY PROJECTS ═══ -->
+  <section class="panel reveal" id="step-projects" data-step="5">
+    <div class="panel-label">Dungeon Clear Record</div>
+    <div class="step-badge">05 <span class="step-badge-label">// KEY PROJECTS</span></div>
+    <h2 class="section-header" data-icon="&#127984;">Key Projects</h2>
+    <div class="dungeons stagger-children">
+
+      <a class="dungeon" href="https://github.com/abhimithra02" target="_blank" rel="noopener" data-dungeon>
+        <div class="dungeon-rank">S-Rank Dungeon</div>
+        <div class="dungeon-name">Agentic QA Automation Platform</div>
+        <div class="dungeon-desc">Full-stack agentic AI platform automating website QA at scale. LLM agents orchestrate multi-step validation workflows via function calling with rule-based fallback.</div>
+        <div class="dungeon-tech"><span class="tech-tag">Python</span><span class="tech-tag">Flask</span><span class="tech-tag">LangChain</span><span class="tech-tag">OpenAI</span><span class="tech-tag">AWS</span><span class="tech-tag">MongoDB</span></div>
+        <span class="dungeon-link-icon" aria-hidden="true">&#8599;</span>
+      </a>
+
+      <a class="dungeon" href="https://github.com/abhimithra02" target="_blank" rel="noopener" data-dungeon>
+        <div class="dungeon-rank">S-Rank Dungeon</div>
+        <div class="dungeon-name">Document Intelligence Chatbot (RAG)</div>
+        <div class="dungeon-desc">Enterprise document chatbot reducing manual search time by 80%+. RAG architecture on Pinecone with hybrid search (Vector + BM25).</div>
+        <div class="dungeon-tech"><span class="tech-tag">LangChain</span><span class="tech-tag">Pinecone</span><span class="tech-tag">Python</span><span class="tech-tag">OpenAI</span></div>
+        <span class="dungeon-link-icon" aria-hidden="true">&#8599;</span>
+      </a>
+
+      <a class="dungeon" href="https://github.com/abhimithra02" target="_blank" rel="noopener" data-dungeon>
+        <div class="dungeon-rank">A-Rank Dungeon</div>
+        <div class="dungeon-name">COVID-19 Detection from X-Rays</div>
+        <div class="dungeon-desc">Benchmarked VGG16, VGG19, and ResNet50 on doctor-screened X-ray data, quantifying preprocessing effects on classification.</div>
+        <div class="dungeon-tech"><span class="tech-tag">TensorFlow</span><span class="tech-tag">Keras</span><span class="tech-tag">CNN</span></div>
+        <span class="dungeon-link-icon" aria-hidden="true">&#8599;</span>
+      </a>
+
+      <a class="dungeon" href="https://github.com/abhimithra02" target="_blank" rel="noopener" data-dungeon>
+        <div class="dungeon-rank">A-Rank Dungeon</div>
+        <div class="dungeon-name">Sentiment Analysis (RNN)</div>
+        <div class="dungeon-desc">RNN classifier handling negation and context shifts better than classical ML baselines on movie review data.</div>
+        <div class="dungeon-tech"><span class="tech-tag">Python</span><span class="tech-tag">RNN</span><span class="tech-tag">NLP</span></div>
+        <span class="dungeon-link-icon" aria-hidden="true">&#8599;</span>
+      </a>
+
+      <a class="dungeon" href="https://github.com/abhimithra02" target="_blank" rel="noopener" data-dungeon>
+        <div class="dungeon-rank">B-Rank Dungeon</div>
+        <div class="dungeon-name">SVM Model Deployment</div>
+        <div class="dungeon-desc">Took an SVM model from notebook to live web application — first end-to-end deployment experience.</div>
+        <div class="dungeon-tech"><span class="tech-tag">Scikit-learn</span><span class="tech-tag">Streamlit</span><span class="tech-tag">Heroku</span></div>
+        <span class="dungeon-link-icon" aria-hidden="true">&#8599;</span>
+      </a>
+
+      <a class="dungeon" href="https://github.com/abhimithra02" target="_blank" rel="noopener" data-dungeon>
+        <div class="dungeon-rank">B-Rank Dungeon</div>
+        <div class="dungeon-name">Body Posture Controller</div>
+        <div class="dungeon-desc">Real-time body-landmark tracking translating posture into character movement controls.</div>
+        <div class="dungeon-tech"><span class="tech-tag">OpenCV</span><span class="tech-tag">MediaPipe</span><span class="tech-tag">Tkinter</span></div>
+        <span class="dungeon-link-icon" aria-hidden="true">&#8599;</span>
+      </a>
+
+      <a class="dungeon" href="https://github.com/abhimithra02" target="_blank" rel="noopener" data-dungeon>
+        <div class="dungeon-rank">B-Rank Dungeon</div>
+        <div class="dungeon-name">CO2 Emission Forecasting</div>
+        <div class="dungeon-desc">Seasonal ARIMA forecasting of monthly CO2 emissions with full stationarity and decomposition validation.</div>
+        <div class="dungeon-tech"><span class="tech-tag">Python</span><span class="tech-tag">ARIMA</span><span class="tech-tag">Statsmodels</span></div>
+        <span class="dungeon-link-icon" aria-hidden="true">&#8599;</span>
+      </a>
+
+    </div>
+  </section>
+
+  <div class="glitch-line"></div>
+
+  <!-- ═══ STEP 6: EDUCATION & ACHIEVEMENTS ═══ -->
+  <section class="panel reveal" id="step-education" data-step="6">
+    <div class="panel-label">Character Progression</div>
+    <div class="step-badge">06 <span class="step-badge-label">// EDUCATION &amp; ACHIEVEMENTS</span></div>
+    <h2 class="section-header" data-icon="&#127891;">Education &amp; Achievements</h2>
+    <div class="edu-grid" style="margin-bottom: 24px;">
+      <div class="edu-item">
+        <div class="edu-degree">PG Diploma in Data Science (Prodegree)</div>
+        <div class="edu-school">Imarticus Learning</div>
+      </div>
+      <div class="edu-item">
+        <div class="edu-degree">B.Tech — Electrical &amp; Electronics Engineering</div>
+        <div class="edu-school">DMS SVH College of Engineering, 2018</div>
+      </div>
+    </div>
+    <div class="skill-cat-title">Achievements Unlocked</div>
+    <div class="cert-item"><span class="cert-icon">&#9733;</span><span class="cert-text">IBM Certified Specialist — IBM SPSS Modeller Level 1</span></div>
+    <div class="cert-item"><span class="cert-icon">&#9733;</span><span class="cert-text">Ranked 473rd of 10,000+ — Analytics Vidhya Hackathon</span></div>
+    <div class="cert-item"><span class="cert-icon">&#9733;</span><span class="cert-text">Paper Presentation — Sri Vasavi College of Engineering Fest</span></div>
+  </section>
+
+  <!-- ═══ FOOTER ═══ -->
+  <footer class="footer">
+    <div class="system-notif" style="margin-bottom: 8px;">System Status: Online</div>
+    <a href="mailto:abhimithrapeddi07@gmail.com">abhimithrapeddi07@gmail.com</a> &middot; Hyderabad, India
+  </footer>
+</div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
