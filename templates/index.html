@@ -14,6 +14,25 @@
   <meta property="og:description" content="AI/ML Engineer specializing in Generative AI, LLMs, Agentic Systems & RAG pipelines. 6+ years of experience.">
   <meta property="og:type" content="website">
   <meta property="og:image" content="{{ url_for('static', filename='img/profile.webp', _external=True) }}">
+  <meta property="og:url" content="{{ url_for('index', _external=True) }}">
+
+  <!-- Runs before first paint: theme (no flash), JS flag, skip gate on repeat visits -->
+  <script>
+    (function () {
+      var d = document.documentElement, t, seen;
+      try { t = localStorage.getItem('theme'); seen = sessionStorage.getItem('gateSeen'); } catch (e) {}
+      if (t !== 'light' && t !== 'dark') {
+        t = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      }
+      d.setAttribute('data-theme', t);
+      d.classList.add('js');
+      if (seen) d.classList.add('gate-seen');
+      // If main.js fails to load or run, fall back to the plain, fully visible page
+      window.addEventListener('load', function () {
+        if (!window.__siteReady) d.classList.remove('js');
+      });
+    })();
+  </script>
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Abhimithra Peddi — AI/ML Engineer">
   <meta name="twitter:description" content="AI/ML Engineer specializing in Generative AI, LLMs, Agentic Systems & RAG pipelines.">
@@ -29,7 +48,7 @@
 <body>
 
 <!-- DUNGEON GATE SPLASH -->
-<div id="gate-overlay" role="dialog" aria-label="Welcome splash screen" tabindex="0">
+<div id="gate-overlay" role="dialog" aria-modal="true" aria-label="Welcome splash screen">
   <div class="gate-portal">
     <div class="gate-ring gate-ring-2"></div>
     <div class="gate-ring gate-ring-1"></div>
@@ -38,7 +57,7 @@
       <div class="gate-core-text">Dungeon Gate Detected</div>
       <div class="gate-rank">S</div>
       <div class="gate-core-text">Rank: S-Class Hunter</div>
-      <div class="gate-enter" role="button">Enter Dungeon</div>
+      <button type="button" class="gate-enter" id="gateEnter">Enter Dungeon</button>
     </div>
   </div>
 </div>
@@ -98,10 +117,10 @@
       <h1>ABHIMITHRA PEDDI</h1>
       <div class="hero-title typing">AI / Machine Learning Engineer</div>
       <div class="hero-stats" id="heroStats">
-        <div class="hero-stat"><div class="hero-stat-val"><span class="counter" data-target="6">0</span>+</div><div class="hero-stat-label">Years EXP</div></div>
-        <div class="hero-stat"><div class="hero-stat-val"><span class="counter" data-target="80">0</span>%+</div><div class="hero-stat-label">Search Time Reduced</div></div>
-        <div class="hero-stat"><div class="hero-stat-val"><span class="counter" data-target="7">0</span></div><div class="hero-stat-label">Dungeons Cleared</div></div>
-        <div class="hero-stat"><div class="hero-stat-val"><span class="counter" data-target="25">0</span>%</div><div class="hero-stat-label">Efficiency Boost</div></div>
+        <div class="hero-stat"><div class="hero-stat-val"><span class="counter" data-target="6">6</span>+</div><div class="hero-stat-label">Years EXP</div></div>
+        <div class="hero-stat"><div class="hero-stat-val"><span class="counter" data-target="80">80</span>%+</div><div class="hero-stat-label">Search Time Reduced</div></div>
+        <div class="hero-stat"><div class="hero-stat-val"><span class="counter" data-target="7">7</span></div><div class="hero-stat-label">Dungeons Cleared</div></div>
+        <div class="hero-stat"><div class="hero-stat-val"><span class="counter" data-target="25">25</span>%</div><div class="hero-stat-label">Efficiency Boost</div></div>
       </div>
       <div class="contact-bar">
         <a href="mailto:abhimithrapeddi07@gmail.com">Email</a>
@@ -163,44 +182,44 @@
       <div>
         <div class="skill-category">
           <div class="skill-cat-title">Generative AI &amp; LLMs</div>
-          <div class="skill-row" role="progressbar" aria-label="LLM Dev" aria-valuenow="95" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">LLM Dev</span><div class="skill-bar-track"><div class="skill-bar-fill blue" data-level="95"></div></div><span class="skill-level">95</span></div>
-          <div class="skill-row" role="progressbar" aria-label="Prompt Engineering" aria-valuenow="92" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">Prompt Eng.</span><div class="skill-bar-track"><div class="skill-bar-fill blue" data-level="92"></div></div><span class="skill-level">92</span></div>
-          <div class="skill-row" role="progressbar" aria-label="RAG / Embeddings" aria-valuenow="93" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">RAG / Embeddings</span><div class="skill-bar-track"><div class="skill-bar-fill blue" data-level="93"></div></div><span class="skill-level">93</span></div>
-          <div class="skill-row" role="progressbar" aria-label="LangChain" aria-valuenow="90" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">LangChain</span><div class="skill-bar-track"><div class="skill-bar-fill blue" data-level="90"></div></div><span class="skill-level">90</span></div>
+          <div class="skill-row" role="progressbar" aria-label="LLM Dev" aria-valuenow="95" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">LLM Dev</span><div class="skill-bar-track"><div class="skill-bar-fill blue" data-level="95" style="--level:95%"></div></div><span class="skill-level">95</span></div>
+          <div class="skill-row" role="progressbar" aria-label="Prompt Engineering" aria-valuenow="92" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">Prompt Eng.</span><div class="skill-bar-track"><div class="skill-bar-fill blue" data-level="92" style="--level:92%"></div></div><span class="skill-level">92</span></div>
+          <div class="skill-row" role="progressbar" aria-label="RAG / Embeddings" aria-valuenow="93" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">RAG / Embeddings</span><div class="skill-bar-track"><div class="skill-bar-fill blue" data-level="93" style="--level:93%"></div></div><span class="skill-level">93</span></div>
+          <div class="skill-row" role="progressbar" aria-label="LangChain" aria-valuenow="90" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">LangChain</span><div class="skill-bar-track"><div class="skill-bar-fill blue" data-level="90" style="--level:90%"></div></div><span class="skill-level">90</span></div>
         </div>
         <div class="skill-category">
           <div class="skill-cat-title">Agentic AI</div>
-          <div class="skill-row" role="progressbar" aria-label="AI Agents" aria-valuenow="94" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">AI Agents</span><div class="skill-bar-track"><div class="skill-bar-fill purple" data-level="94"></div></div><span class="skill-level">94</span></div>
-          <div class="skill-row" role="progressbar" aria-label="Function Calling" aria-valuenow="91" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">Function Calling</span><div class="skill-bar-track"><div class="skill-bar-fill purple" data-level="91"></div></div><span class="skill-level">91</span></div>
-          <div class="skill-row" role="progressbar" aria-label="Task Orchestration" aria-valuenow="89" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">Task Orchestration</span><div class="skill-bar-track"><div class="skill-bar-fill purple" data-level="89"></div></div><span class="skill-level">89</span></div>
+          <div class="skill-row" role="progressbar" aria-label="AI Agents" aria-valuenow="94" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">AI Agents</span><div class="skill-bar-track"><div class="skill-bar-fill purple" data-level="94" style="--level:94%"></div></div><span class="skill-level">94</span></div>
+          <div class="skill-row" role="progressbar" aria-label="Function Calling" aria-valuenow="91" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">Function Calling</span><div class="skill-bar-track"><div class="skill-bar-fill purple" data-level="91" style="--level:91%"></div></div><span class="skill-level">91</span></div>
+          <div class="skill-row" role="progressbar" aria-label="Task Orchestration" aria-valuenow="89" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">Task Orchestration</span><div class="skill-bar-track"><div class="skill-bar-fill purple" data-level="89" style="--level:89%"></div></div><span class="skill-level">89</span></div>
         </div>
         <div class="skill-category">
           <div class="skill-cat-title">Cloud &amp; Deployment</div>
-          <div class="skill-row" role="progressbar" aria-label="AWS" aria-valuenow="90" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">AWS</span><div class="skill-bar-track"><div class="skill-bar-fill gold" data-level="90"></div></div><span class="skill-level">90</span></div>
-          <div class="skill-row" role="progressbar" aria-label="SageMaker" aria-valuenow="87" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">SageMaker</span><div class="skill-bar-track"><div class="skill-bar-fill gold" data-level="87"></div></div><span class="skill-level">87</span></div>
-          <div class="skill-row" role="progressbar" aria-label="Docker / CI-CD" aria-valuenow="82" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">Docker / CI-CD</span><div class="skill-bar-track"><div class="skill-bar-fill gold" data-level="82"></div></div><span class="skill-level">82</span></div>
+          <div class="skill-row" role="progressbar" aria-label="AWS" aria-valuenow="90" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">AWS</span><div class="skill-bar-track"><div class="skill-bar-fill gold" data-level="90" style="--level:90%"></div></div><span class="skill-level">90</span></div>
+          <div class="skill-row" role="progressbar" aria-label="SageMaker" aria-valuenow="87" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">SageMaker</span><div class="skill-bar-track"><div class="skill-bar-fill gold" data-level="87" style="--level:87%"></div></div><span class="skill-level">87</span></div>
+          <div class="skill-row" role="progressbar" aria-label="Docker / CI-CD" aria-valuenow="82" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">Docker / CI-CD</span><div class="skill-bar-track"><div class="skill-bar-fill gold" data-level="82" style="--level:82%"></div></div><span class="skill-level">82</span></div>
         </div>
       </div>
       <div>
         <div class="skill-category">
           <div class="skill-cat-title">ML &amp; Deep Learning</div>
-          <div class="skill-row" role="progressbar" aria-label="PyTorch" aria-valuenow="90" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">PyTorch</span><div class="skill-bar-track"><div class="skill-bar-fill cyan" data-level="90"></div></div><span class="skill-level">90</span></div>
-          <div class="skill-row" role="progressbar" aria-label="TensorFlow" aria-valuenow="88" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">TensorFlow</span><div class="skill-bar-track"><div class="skill-bar-fill cyan" data-level="88"></div></div><span class="skill-level">88</span></div>
-          <div class="skill-row" role="progressbar" aria-label="NLP" aria-valuenow="91" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">NLP</span><div class="skill-bar-track"><div class="skill-bar-fill cyan" data-level="91"></div></div><span class="skill-level">91</span></div>
-          <div class="skill-row" role="progressbar" aria-label="Computer Vision" aria-valuenow="85" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">Computer Vision</span><div class="skill-bar-track"><div class="skill-bar-fill cyan" data-level="85"></div></div><span class="skill-level">85</span></div>
+          <div class="skill-row" role="progressbar" aria-label="PyTorch" aria-valuenow="90" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">PyTorch</span><div class="skill-bar-track"><div class="skill-bar-fill cyan" data-level="90" style="--level:90%"></div></div><span class="skill-level">90</span></div>
+          <div class="skill-row" role="progressbar" aria-label="TensorFlow" aria-valuenow="88" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">TensorFlow</span><div class="skill-bar-track"><div class="skill-bar-fill cyan" data-level="88" style="--level:88%"></div></div><span class="skill-level">88</span></div>
+          <div class="skill-row" role="progressbar" aria-label="NLP" aria-valuenow="91" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">NLP</span><div class="skill-bar-track"><div class="skill-bar-fill cyan" data-level="91" style="--level:91%"></div></div><span class="skill-level">91</span></div>
+          <div class="skill-row" role="progressbar" aria-label="Computer Vision" aria-valuenow="85" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">Computer Vision</span><div class="skill-bar-track"><div class="skill-bar-fill cyan" data-level="85" style="--level:85%"></div></div><span class="skill-level">85</span></div>
         </div>
         <div class="skill-category">
           <div class="skill-cat-title">APIs &amp; Backend</div>
-          <div class="skill-row" role="progressbar" aria-label="Python" aria-valuenow="96" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">Python</span><div class="skill-bar-track"><div class="skill-bar-fill blue" data-level="96"></div></div><span class="skill-level">96</span></div>
-          <div class="skill-row" role="progressbar" aria-label="Flask / Django" aria-valuenow="88" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">Flask / Django</span><div class="skill-bar-track"><div class="skill-bar-fill blue" data-level="88"></div></div><span class="skill-level">88</span></div>
-          <div class="skill-row" role="progressbar" aria-label="REST APIs" aria-valuenow="90" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">REST APIs</span><div class="skill-bar-track"><div class="skill-bar-fill blue" data-level="90"></div></div><span class="skill-level">90</span></div>
-          <div class="skill-row" role="progressbar" aria-label="React.js" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">React.js</span><div class="skill-bar-track"><div class="skill-bar-fill blue" data-level="75"></div></div><span class="skill-level">75</span></div>
+          <div class="skill-row" role="progressbar" aria-label="Python" aria-valuenow="96" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">Python</span><div class="skill-bar-track"><div class="skill-bar-fill blue" data-level="96" style="--level:96%"></div></div><span class="skill-level">96</span></div>
+          <div class="skill-row" role="progressbar" aria-label="Flask / Django" aria-valuenow="88" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">Flask / Django</span><div class="skill-bar-track"><div class="skill-bar-fill blue" data-level="88" style="--level:88%"></div></div><span class="skill-level">88</span></div>
+          <div class="skill-row" role="progressbar" aria-label="REST APIs" aria-valuenow="90" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">REST APIs</span><div class="skill-bar-track"><div class="skill-bar-fill blue" data-level="90" style="--level:90%"></div></div><span class="skill-level">90</span></div>
+          <div class="skill-row" role="progressbar" aria-label="React.js" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">React.js</span><div class="skill-bar-track"><div class="skill-bar-fill blue" data-level="75" style="--level:75%"></div></div><span class="skill-level">75</span></div>
         </div>
         <div class="skill-category">
           <div class="skill-cat-title">Data &amp; Databases</div>
-          <div class="skill-row" role="progressbar" aria-label="SQL / MySQL" aria-valuenow="88" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">SQL / MySQL</span><div class="skill-bar-track"><div class="skill-bar-fill gold" data-level="88"></div></div><span class="skill-level">88</span></div>
-          <div class="skill-row" role="progressbar" aria-label="MongoDB" aria-valuenow="85" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">MongoDB</span><div class="skill-bar-track"><div class="skill-bar-fill gold" data-level="85"></div></div><span class="skill-level">85</span></div>
-          <div class="skill-row" role="progressbar" aria-label="Pinecone" aria-valuenow="88" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">Pinecone</span><div class="skill-bar-track"><div class="skill-bar-fill gold" data-level="88"></div></div><span class="skill-level">88</span></div>
+          <div class="skill-row" role="progressbar" aria-label="SQL / MySQL" aria-valuenow="88" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">SQL / MySQL</span><div class="skill-bar-track"><div class="skill-bar-fill gold" data-level="88" style="--level:88%"></div></div><span class="skill-level">88</span></div>
+          <div class="skill-row" role="progressbar" aria-label="MongoDB" aria-valuenow="85" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">MongoDB</span><div class="skill-bar-track"><div class="skill-bar-fill gold" data-level="85" style="--level:85%"></div></div><span class="skill-level">85</span></div>
+          <div class="skill-row" role="progressbar" aria-label="Pinecone" aria-valuenow="88" aria-valuemin="0" aria-valuemax="100"><span class="skill-name">Pinecone</span><div class="skill-bar-track"><div class="skill-bar-fill gold" data-level="88" style="--level:88%"></div></div><span class="skill-level">88</span></div>
         </div>
       </div>
     </div>
