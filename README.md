@@ -23,6 +23,8 @@ A single-page, Solo Leveling–themed portfolio for an AI/ML Engineer. It's a sm
 app.py                  # Flask app: one route (/) rendering templates/index.html
 requirements.txt        # flask, gunicorn
 render.yaml             # Render service config
+.github/workflows/
+  keep-awake.yml        # Pings the site every 10 min so Render doesn't sleep
 templates/index.html    # Page markup + inline <head> script (theme, JS flag, gate skip)
 static/
   css/style.css         # Theme tokens, layout, animations, no-JS / reduced-motion rules
@@ -56,7 +58,16 @@ Pushing to `main` redeploys the service. The settings are in `render.yaml`:
 | Start command | `gunicorn app:app` |
 | Python version | 3.11.0 |
 
-The free Render plan puts the service to sleep after 15 minutes without traffic. The next visit then shows a "Service waking up" screen for 30–60 seconds. To avoid it, use an uptime checker (for example UptimeRobot) to load the URL every 10 minutes, or upgrade to a paid plan.
+The free Render plan puts the service to sleep after 15 minutes without traffic. The next visit then shows a "Service waking up" screen for 30–60 seconds.
+
+To prevent this, the GitHub Actions workflow `.github/workflows/keep-awake.yml` loads the site every 10 minutes. You can also run it by hand from the **Actions** tab.
+
+- **Change the URL:** set a repository variable named `PING_URL` (**Settings → Secrets and variables → Actions → Variables**). It defaults to `https://website-o022.onrender.com/`.
+- **Delays:** GitHub can delay scheduled runs at busy times, so the site may still sleep now and then.
+- **Auto-disable:** GitHub turns scheduled workflows off after 60 days with no repository activity. Turn it back on from the **Actions** tab.
+- **Free hours:** Render's free plan includes 750 hours a month, enough for one service running all the time.
+
+For pings that run exactly on time, use an external uptime checker such as UptimeRobot. For a service that never sleeps at all, upgrade to a paid Render plan.
 
 `app.py` uses `ProxyFix`, so absolute URLs such as `og:image` and `og:url` come out as `https://` behind Render's proxy.
 
