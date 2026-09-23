@@ -1,10 +1,9 @@
 services:
   - type: web
     name: abhimithra-portfolio
-    runtime: static
-    buildCommand: echo "No build step"
-    staticPublishPath: ./public
-    headers:
-      - path: /static/*
-        name: Cache-Control
-        value: public, max-age=3600
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.0"
