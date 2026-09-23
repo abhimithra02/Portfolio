@@ -69,9 +69,6 @@ h1,h2,h3,h4 { font-family: 'Rajdhani', sans-serif; font-weight: 700; }
   outline: none;
 }
 #gate-overlay.fade-out { opacity: 0; pointer-events: none; }
-/* Gate only shows when JS can dismiss it, and only once per browser session */
-html:not(.js) #gate-overlay,
-html.gate-seen #gate-overlay { display: none; }
 
 .gate-portal {
   width: 220px; height: 320px;
@@ -120,7 +117,6 @@ html.gate-seen #gate-overlay { display: none; }
   margin: 8px 0;
 }
 .gate-enter {
-  background: none; cursor: pointer;
   font-family: 'Rajdhani', sans-serif;
   font-size: 0.85rem; letter-spacing: 0.2em; text-transform: uppercase;
   color: var(--gold);
@@ -228,9 +224,6 @@ html.gate-seen #gate-overlay { display: none; }
   width: 0;
   animation: typing 2.5s steps(32, end) 0.8s forwards, blink 0.7s step-end infinite;
 }
-/* Hold the typing effect until the visitor is past the gate */
-html.js:not(.started) .typing { animation-play-state: paused; }
-html:not(.js) .typing { width: 100%; animation: none; border-right: none; }
 @keyframes typing { to { width: 100%; } }
 @keyframes blink { 50% { border-color: transparent; } }
 
@@ -390,7 +383,6 @@ html:not(.js) .typing { width: 100%; animation: none; border-right: none; }
   height: 100%; border-radius: 3px; width: 0;
   transition: width 1.5s cubic-bezier(0.25,0.46,0.45,0.94);
 }
-html:not(.js) .skill-bar-fill { width: var(--level); }
 .skill-bar-fill::after {
   content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 4px;
   background: white; opacity: 0; border-radius: 3px;
@@ -491,11 +483,11 @@ a.dungeon { text-decoration: none; color: inherit; display: block; }
 .footer a { color: var(--blue); text-decoration: none; }
 
 /* ═══ ANIMATIONS ═══ */
-.js .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.8s ease, transform 0.8s ease; }
+.reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.8s ease, transform 0.8s ease; }
 .reveal.visible { opacity: 1; transform: translateY(0); }
-.js .reveal-scale { opacity: 0; transform: scale(0.9); transition: opacity 0.6s ease, transform 0.6s ease; }
+.reveal-scale { opacity: 0; transform: scale(0.9); transition: opacity 0.6s ease, transform 0.6s ease; }
 .reveal-scale.visible { opacity: 1; transform: scale(1); }
-.js .stagger-children > * { opacity: 0; transform: translateY(16px); transition: opacity 0.5s ease, transform 0.5s ease; }
+.stagger-children > * { opacity: 0; transform: translateY(16px); transition: opacity 0.5s ease, transform 0.5s ease; }
 .stagger-children.visible > *:nth-child(1) { transition-delay: 0.05s; opacity: 1; transform: translateY(0); }
 .stagger-children.visible > *:nth-child(2) { transition-delay: 0.1s; opacity: 1; transform: translateY(0); }
 .stagger-children.visible > *:nth-child(3) { transition-delay: 0.15s; opacity: 1; transform: translateY(0); }
@@ -653,12 +645,12 @@ a.dungeon { text-decoration: none; color: inherit; display: block; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .js .reveal, .js .reveal-scale { opacity: 1; transform: none; transition: none; }
-  .js .stagger-children > * { opacity: 1; transform: none; transition: none; }
+  .reveal, .reveal-scale { opacity: 1; transform: none; transition: none; }
+  .stagger-children > * { opacity: 1; transform: none; transition: none; }
   .skill-bar-fill { transition: none; }
   #particles, .shadow-soldiers, #shadow-aura { display: none; }
   .system-notif, .hero-rank, .cert-icon, .avatar-ring, .avatar-ring-2 { animation: none; }
-  .typing, html.js:not(.started) .typing { width: 100%; animation: none; border-right: none; }
+  .typing { width: 100%; animation: none; border-right: none; }
   .glitch-line::after { animation: none; display: none; }
   .power-display { display: none; }
   #gate-overlay { display: none; }
