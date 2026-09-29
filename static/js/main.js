@@ -378,3 +378,134 @@ function startStepTracker() {
     });
   }
 })();
+
+// ═══ RESUME CHATBOT (answers come from /api/chat, grounded in the resume PDF) ═══
+(function () {
+  var launcher = document.getElementById('chatLauncher');
+  var panel = document.getElementById('chatPanel');
+  var closeBtn = document.getElementById('chatClose');
+  var log = document.getElementById('chatLog');
+  var form = document.getElementById('chatForm');
+  var input = document.getElementById('chatInput');
+  var suggestions = document.getElementById('chatSuggestions');
+  if (!launcher || !panel || !form) return;
+
+  var sendBtn = form.querySelector('button[type="submit"]');
+  var history = [];   // completed {role, content} turns, sent for follow-up questions
+  var busy = false;
+
+  function open() {
+    panel.hidden = false;
+    launcher.setAttribute('aria-expanded', 'true');
+    input.focus();
+  }
+  function close() {
+    panel.hidden = true;
+    launcher.setAttribute('aria-expanded', 'false');
+    launcher.focus();
+  }
+  launcher.addEventListener('click', open);
+  closeBtn.addEventListener('click', close);
+  panel.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') close();
+  });
+
+  // Plain text in, safe DOM out: "- " lines become a list, other lines paragraphs
+  function renderText(el, text) {
+    var list = null;
+    text.split('\n').forEach(function (line) {
+      line = line.trim();
+      if (!line) { list = null; return; }
+      if (/^[-*•] /.test(line)) {
+        if (!list) { list = document.createElement('ul'); el.appendChild(list); }
+        var li = document.createElement('li');
+        li.textContent = line.slice(2);
+        list.appendChild(li);
+      } else {
+        list = null;
+        var p = document.createElement('p');
+        p.textContent = line;
+        el.appendChild(p);
+      }
+    });
+  }
+
+  function addMessage(role, text, extraClass) {
+    var msg = document.createElement('div');
+    msg.className = 'chat-msg ' + role + (extraClass ? ' ' + extraClass : '');
+    renderText(msg, text);
+    log.appendChild(msg);
+    log.scrollTop = log.scrollHeight;
+    return msg;
+  }
+
+  function addSources(msg, sources) {
+    var seen = [];
+    (sources || []).forEach(function (s) {
+      if (seen.indexOf(s.section) === -1) seen.push(s.section);
+    });
+    if (!seen.length) return;
+    var el = document.createElement('div');
+    el.className = 'chat-sources';
+    el.textContent = 'Source: resume · ' + seen.join(', ');
+    msg.appendChild(el);
+  }
+
+  function setBusy(state) {
+    busy = state;
+    sendBtn.disabled = state;
+  }
+
+  function ask(question) {
+    question = question.trim();
+    if (!question || busy) return;
+    if (suggestions) suggestions.hidden = true;
+    addMessage('user', question);
+    input.value = '';
+    setBusy(true);
+
+    var typing = document.createElement('div');
+    typing.className = 'chat-msg bot chat-typing';
+    typing.setAttribute('aria-label', 'Assistant is typing');
+    typing.innerHTML = '<span></span><span></span><span></span>';
+    log.appendChild(typing);
+    log.scrollTop = log.scrollHeight;
+
+    fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: question, history: history.slice(-6) })
+    })
+      .then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (data) {
+          if (!res.ok || !data.answer) throw new Error(data.error || 'The system could not answer right now. Please try again.');
+          return data;
+        });
+      })
+      .then(function (data) {
+        typing.remove();
+        var msg = addMessage('bot', data.answer);
+        addSources(msg, data.sources);
+        history.push({ role: 'user', content: question }, { role: 'assistant', content: data.answer });
+      })
+      .catch(function (err) {
+        typing.remove();
+        var text = err instanceof TypeError ? 'Connection lost. Check your network and try again.' : err.message;
+        addMessage('bot', text, 'error');
+      })
+      .then(function () {
+        setBusy(false);
+        input.focus();
+      });
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    ask(input.value);
+  });
+  if (suggestions) {
+    suggestions.addEventListener('click', function (e) {
+      if (e.target.tagName === 'BUTTON') ask(e.target.textContent);
+    });
+  }
+})();

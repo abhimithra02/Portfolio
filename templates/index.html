@@ -81,6 +81,39 @@
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
 </button>
 
+<!-- RESUME CHATBOT -->
+<div class="chat" id="chat">
+  <button type="button" class="chat-launcher" id="chatLauncher" aria-expanded="false" aria-controls="chatPanel">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    <span class="chat-launcher-text">Ask the System</span>
+  </button>
+  <div class="chat-panel" id="chatPanel" role="dialog" aria-labelledby="chatTitle" hidden>
+    <div class="chat-header">
+      <div>
+        <div class="chat-title" id="chatTitle">System Assistant</div>
+        <div class="chat-sub">Answers from Abhimithra's resume</div>
+      </div>
+      <button type="button" class="chat-close" id="chatClose" aria-label="Close chat">&times;</button>
+    </div>
+    <div class="chat-log" id="chatLog" role="log" aria-live="polite">
+      <div class="chat-msg bot"><p>Hunter profile loaded. Ask me about Abhimithra's experience, skills, projects or education.</p></div>
+    </div>
+    <div class="chat-suggestions" id="chatSuggestions">
+      <button type="button">What is his current role?</button>
+      <button type="button">What RAG projects has he built?</button>
+      <button type="button">Which cloud tools does he use?</button>
+      <button type="button">How can I contact him?</button>
+    </div>
+    <form class="chat-form" id="chatForm">
+      <label class="visually-hidden" for="chatInput">Your question</label>
+      <input id="chatInput" type="text" maxlength="500" autocomplete="off" placeholder="Ask about skills, experience…">
+      <button type="submit" aria-label="Send question">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </form>
+  </div>
+</div>
+
 <!-- SHADOW CURSOR AURA -->
 <div id="shadow-aura"></div>
 
