@@ -394,12 +394,132 @@ function startStepTracker() {
   var history = [];   // completed {role, content} turns, sent for follow-up questions
   var busy = false;
 
+  // ─── Voice: Igris reads replies aloud (speechSynthesis) and takes spoken questions
+  //     (SpeechRecognition). Both are built into the browser; each control only
+  //     appears where the browser supports it.
+  var synth = window.speechSynthesis;
+  var Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var voiceToggle = document.getElementById('chatVoiceToggle');
+  var micBtn = document.getElementById('chatMic');
+  var voiceOn = true;
+  try { voiceOn = localStorage.getItem('igrisVoice') !== 'off'; } catch (e) {}
+  var speakingMsg = null;
+
+  function pickVoice() {
+    var voices = synth.getVoices().filter(function (v) { return /^en/i.test(v.lang); });
+    // A deep British voice suits a shadow knight; fall back to any English voice
+    return voices.filter(function (v) { return /UK English Male|Daniel|Arthur|George|Ryan/i.test(v.name); })[0]
+      || voices.filter(function (v) { return /en[-_]GB/i.test(v.lang); })[0]
+      || voices[0] || null;
+  }
+
+  // Answers are written for reading; smooth out symbols that sound odd aloud
+  function forSpeech(text) {
+    return text
+      .replace(/^[-*•] /gm, '')
+      .replace(/ [|·—] /g, ', ')
+      .replace(/&/g, ' and ')
+      .replace(/~(\d)/g, 'about $1');
+  }
+
+  function stopSpeaking() {
+    if (synth) synth.cancel();
+    if (speakingMsg) { speakingMsg.classList.remove('speaking'); speakingMsg = null; }
+  }
+
+  function speak(text, msg) {
+    if (!synth || !voiceOn) return;
+    stopSpeaking();
+    // Queue sentence-sized pieces: Chrome silently stops long single utterances
+    var parts = forSpeech(text).split(/(?<=[.!?;])\s+|\n+/);
+    var voice = pickVoice();
+    speakingMsg = msg;
+    parts.forEach(function (part, i) {
+      part = part.trim();
+      if (!part) return;
+      var u = new SpeechSynthesisUtterance(part);
+      if (voice) { u.voice = voice; u.lang = voice.lang; }
+      u.rate = 0.95;
+      u.pitch = 0.8;
+      if (i === 0) u.onstart = function () { if (speakingMsg === msg) msg.classList.add('speaking'); };
+      if (i === parts.length - 1) u.onend = u.onerror = function () {
+        if (speakingMsg === msg) { msg.classList.remove('speaking'); speakingMsg = null; }
+      };
+      synth.speak(u);
+    });
+  }
+
+  if (synth && voiceToggle) {
+    voiceToggle.hidden = false;
+    voiceToggle.setAttribute('aria-pressed', String(voiceOn));
+    voiceToggle.addEventListener('click', function () {
+      voiceOn = !voiceOn;
+      voiceToggle.setAttribute('aria-pressed', String(voiceOn));
+      try { localStorage.setItem('igrisVoice', voiceOn ? 'on' : 'off'); } catch (e) {}
+      if (!voiceOn) stopSpeaking();
+    });
+    if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = function () {};  // warms the voice list in Chrome
+  }
+
+  var rec = null;
+  var listening = false;
+  if (Recognition && micBtn) {
+    rec = new Recognition();
+    rec.lang = /^en/i.test(navigator.language) ? navigator.language : 'en-US';
+    rec.interimResults = true;
+    rec.continuous = false;
+    rec.maxAlternatives = 1;
+    var heard = '';
+
+    rec.onstart = function () {
+      listening = true;
+      heard = '';
+      micBtn.setAttribute('aria-pressed', 'true');
+      micBtn.setAttribute('aria-label', 'Stop listening');
+      input.value = '';
+      input.placeholder = 'Listening…';
+    };
+    rec.onresult = function (e) {
+      var text = '';
+      for (var i = 0; i < e.results.length; i++) text += e.results[i][0].transcript;
+      input.value = text;
+      if (e.results[e.results.length - 1].isFinal) heard = text;
+    };
+    rec.onerror = function (e) {
+      var msg = {
+        'not-allowed': 'Microphone access is blocked. Allow it in your browser settings to ask by voice.',
+        'service-not-allowed': 'Voice input isn\'t available in this browser. Please type your question.',
+        'no-speech': 'I didn\'t catch that. Tap the mic and try again.',
+        'audio-capture': 'No microphone was found.',
+        'network': 'Voice input needs an internet connection. Please type your question.'
+      }[e.error];
+      if (msg) addMessage('bot', msg, 'error');
+    };
+    rec.onend = function () {
+      listening = false;
+      micBtn.setAttribute('aria-pressed', 'false');
+      micBtn.setAttribute('aria-label', 'Ask by voice');
+      input.placeholder = 'Ask about skills, experience…';
+      if (heard.trim()) ask(heard);
+    };
+
+    micBtn.hidden = false;
+    micBtn.addEventListener('click', function () {
+      if (listening) { rec.stop(); return; }
+      if (busy) return;
+      stopSpeaking();
+      try { rec.start(); } catch (e) {}  // start() throws if a session is already running
+    });
+  }
+
   function open() {
     panel.hidden = false;
     launcher.setAttribute('aria-expanded', 'true');
     input.focus();
   }
   function close() {
+    stopSpeaking();
+    if (listening) rec.abort();
     panel.hidden = true;
     launcher.setAttribute('aria-expanded', 'false');
     launcher.focus();
@@ -454,11 +574,13 @@ function startStepTracker() {
   function setBusy(state) {
     busy = state;
     sendBtn.disabled = state;
+    if (micBtn) micBtn.disabled = state;
   }
 
   function ask(question) {
     question = question.trim();
     if (!question || busy) return;
+    stopSpeaking();
     if (suggestions) suggestions.hidden = true;
     addMessage('user', question);
     input.value = '';
@@ -486,6 +608,7 @@ function startStepTracker() {
         typing.remove();
         var msg = addMessage('bot', data.answer);
         addSources(msg, data.sources);
+        speak(data.answer, msg);
         history.push({ role: 'user', content: question }, { role: 'assistant', content: data.answer });
       })
       .catch(function (err) {
