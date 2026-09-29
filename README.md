@@ -9,7 +9,7 @@ A single-page, Solo Leveling–themed portfolio for an AI/ML Engineer. It's a sm
 - Animated hero stats, skill bars, scroll reveals, particles and shadow soldiers
 - Side step tracker with the active section shown in the tab title
 - Downloadable resume
-- "Ask the System" chatbot that answers visitors' questions from the resume (RAG)
+- "Igris" chatbot that answers visitors' questions from the resume (RAG)
 - Works without JavaScript and respects reduced-motion settings
 
 ## Tech stack
@@ -24,7 +24,8 @@ A single-page, Solo Leveling–themed portfolio for an AI/ML Engineer. It's a sm
 ```
 app.py                  # Flask app: / renders the page, POST /api/chat answers resume questions
 chatbot.py              # Resume RAG: PDF parsing, chunking, BM25 retrieval, answer generation
-requirements.txt        # flask, gunicorn, pypdf, rank-bm25, anthropic
+requirements.txt        # flask, gunicorn, pypdf, rank-bm25, anthropic, python-dotenv
+.env.example            # Template for a local .env (API key, chatbot settings)
 render.yaml             # Render service config
 templates/index.html    # Page markup + inline <head> script (theme, JS flag, gate skip)
 static/
@@ -36,18 +37,81 @@ static/
 
 ## Run locally
 
+You need **Python 3.10 or newer** and **Git**. Check with `python --version` and `git --version`; on Mac, use `python3` if `python` isn't found.
+
+**1. Get the code**
+
 ```bash
+git clone https://github.com/abhimithra02/website.git
+cd website
+```
+
+If you already have it, run `git checkout main && git pull` instead.
+
+**2. Create a virtual environment and install dependencies**
+
+Windows (PowerShell):
+
+```powershell
 python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
+.venv\Scripts\activate
 pip install -r requirements.txt
-python app.py                    # http://localhost:5000
 ```
 
-Or run it the way Render does:
+Mac / Linux:
 
 ```bash
-gunicorn app:app
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
+
+The prompt shows `(.venv)` while the environment is active.
+
+**3. Start the app**
+
+```bash
+python app.py
+```
+
+The terminal should print `Resume index built: 40 chunks` and `Running on http://127.0.0.1:5000`. Keep it open, and stop it with Ctrl+C.
+
+**4. Try it**
+
+Open http://localhost:5000, click **Enter Dungeon**, then **Igris** in the bottom-right corner and ask a question, for example "What is his education?".
+
+**Optional: Claude-written chatbot answers**
+
+Without a key, the chatbot answers with the matching resume lines. To have Claude write the answers, put your Anthropic API key in a `.env` file (create one at https://console.anthropic.com under Settings → API Keys):
+
+```bash
+cp .env.example .env               # Windows: copy .env.example .env
+```
+
+Open `.env` and fill in the key:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Then run `python app.py` again. It should print `LLM answers enabled`.
+
+`.env` is ignored by Git, so the key never gets committed; never put a real key in `.env.example`. You can also set the variable in the terminal instead (`export ANTHROPIC_API_KEY=...`, or `$env:ANTHROPIC_API_KEY="..."` in PowerShell). A variable set in the environment takes precedence over `.env`.
+
+**Run it the way Render does** (Mac / Linux only; gunicorn doesn't run on Windows):
+
+```bash
+gunicorn app:app --timeout 60
+```
+
+**Troubleshooting**
+
+| Problem | Fix |
+|---|---|
+| Windows: "running scripts is disabled" when activating | Run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, answer **Y**, then activate again |
+| Mac: port 5000 already in use (AirPlay Receiver) | Turn off AirPlay Receiver in System Settings, or run `flask --app app run --port 5001` and open http://localhost:5001 |
+| `pip install` fails | Upgrade pip with `python -m pip install --upgrade pip` and try again |
+| Chatbot says it is unavailable | Check the terminal for errors; the resume PDF must be at `static/resume/Abhimithra_Peddi_Resume.pdf` |
 
 ## Deploy (Render)
 
@@ -90,7 +154,7 @@ The free Render plan puts the service to sleep after 15 minutes without traffic.
 
 ## Resume chatbot
 
-The "Ask the System" button (bottom right) opens a chat that answers questions using only the resume PDF.
+The **Igris** button (bottom right, a knight's helmet with a red plume) opens a chat that answers questions using only the resume PDF.
 
 1. **Load and chunk (at startup):** `chatbot.py` reads `static/resume/Abhimithra_Peddi_Resume.pdf` with pypdf and splits it along the resume's own structure: one chunk per bullet, labelled with its section and job title or project name. It also adds a "career timeline" chunk listing every role.
 2. **Retrieve:** each question is ranked against the chunks with BM25, plus a small synonym list (for example "college" → education). For short follow-ups, the previous question is folded in.
@@ -101,6 +165,8 @@ The "Ask the System" button (bottom right) opens a chat that answers questions u
 **Protection:** questions are limited to 500 characters, and each IP gets 12 questions per minute (`CHAT_RATE_LIMIT`). The limit is kept in memory per gunicorn worker.
 
 Replacing the resume PDF updates the chatbot on the next deploy. If you rename the resume's section headings, update `SECTIONS` in `chatbot.py`.
+
+Set these in a local `.env` file (see `.env.example`) or, on Render, under **Environment**.
 
 | Environment variable | Default | Purpose |
 |---|---|---|

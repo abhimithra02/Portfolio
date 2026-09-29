@@ -83,20 +83,27 @@
 
 <!-- RESUME CHATBOT -->
 <div class="chat" id="chat">
-  <button type="button" class="chat-launcher" id="chatLauncher" aria-expanded="false" aria-controls="chatPanel">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-    <span class="chat-launcher-text">Ask the System</span>
+  <button type="button" class="chat-launcher" id="chatLauncher" aria-expanded="false" aria-controls="chatPanel" aria-label="Igris: ask about Abhimithra's resume">
+    <!-- Igris's helm with its red plume -->
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path class="igris-plume" d="M12 8C12 4.5 15 2.5 20.5 3"/>
+      <path class="igris-plume" d="M13.5 8.2C14 6 16.5 5 20 6.5"/>
+      <path d="M5 21v-6a7 7 0 0 1 14 0v6z"/>
+      <path d="M8 14.5h8"/>
+      <path d="M12 14.5V21"/>
+    </svg>
+    <span class="chat-launcher-text">Igris</span>
   </button>
   <div class="chat-panel" id="chatPanel" role="dialog" aria-labelledby="chatTitle" hidden>
     <div class="chat-header">
       <div>
-        <div class="chat-title" id="chatTitle">System Assistant</div>
-        <div class="chat-sub">Answers from Abhimithra's resume</div>
+        <div class="chat-title" id="chatTitle">Igris</div>
+        <div class="chat-sub">Shadow knight · answers from Abhimithra's resume</div>
       </div>
       <button type="button" class="chat-close" id="chatClose" aria-label="Close chat">&times;</button>
     </div>
     <div class="chat-log" id="chatLog" role="log" aria-live="polite">
-      <div class="chat-msg bot"><p>Hunter profile loaded. Ask me about Abhimithra's experience, skills, projects or education.</p></div>
+      <div class="chat-msg bot"><p>Igris, at your command. Ask me about Abhimithra's experience, skills, projects or education.</p></div>
     </div>
     <div class="chat-suggestions" id="chatSuggestions">
       <button type="button">What is his current role?</button>
