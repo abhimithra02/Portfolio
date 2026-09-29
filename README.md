@@ -9,7 +9,7 @@ A single-page, Solo Leveling–themed portfolio for an AI/ML Engineer. It's a sm
 - Animated hero stats, skill bars, scroll reveals, particles and shadow soldiers
 - Side step tracker with the active section shown in the tab title
 - Downloadable resume
-- "Igris" chatbot that answers visitors' questions from the resume (RAG)
+- "Igris" chatbot that answers visitors' questions from the resume (RAG), by text or by voice
 - Works without JavaScript and respects reduced-motion settings
 
 ## Tech stack
@@ -78,7 +78,7 @@ The terminal should print `Resume index built: 40 chunks` and `Running on http:/
 
 **4. Try it**
 
-Open http://localhost:5000, click **Enter Dungeon**, then **Igris** in the bottom-right corner and ask a question, for example "What is his education?".
+Open http://localhost:5000, click **Enter Dungeon**, then **Igris** in the bottom-right corner and ask a question, for example "What is his education?". To ask by voice, tap the microphone and speak; Igris reads the answer aloud.
 
 **Optional: Claude-written chatbot answers**
 
@@ -161,6 +161,23 @@ The **Igris** button (bottom right, a knight's helmet with a red plume) opens a 
 3. **Answer:**
    - **With `ANTHROPIC_API_KEY` set:** Claude (`claude-opus-5-5` at low effort; override with `CHAT_MODEL`) writes a short answer from the retrieved chunks only. The prompt tells it not to invent facts and to point to the email address when the resume doesn't say. The request opts into server-side refusal fallbacks.
    - **Without a key, or if the API call fails:** the top matching resume lines are returned as they are, so the chatbot always works and costs nothing.
+
+### Voice
+
+Igris can listen and talk back, like a voice assistant. Both parts use the browser's built-in Web Speech API, so there are no extra keys, services or server changes.
+
+- **Asking by voice:** tap the microphone next to the text box and speak. The words appear as you talk, and the question is sent when you stop. Tap again to stop early.
+- **Spoken replies:** Igris reads each answer aloud, preferring a deep British English voice (rate 0.95, pitch 0.8) and falling back to any English voice on the device. The reply glows while it is spoken. Long answers are spoken sentence by sentence, because Chrome cuts off long single utterances.
+- **"Arise" wake word:** turn on the **Arise** switch in the chat header, then close the chat and say "Arise" to summon Igris. Igris opens, says "I am here, my liege…", and listens for your question. Saying "Arise, where does he work?" in one go opens Igris and asks straight away. "A rise" is also accepted, because speech engines often hear it that way.
+  - It is opt-in and off by default. The browser asks for microphone permission when you switch it on.
+  - Igris listens for the wake word only while the switch is on, the chat is closed, and the tab is visible. A glowing dot on the Igris button shows whenever it is listening.
+  - The choice is remembered. On later visits it resumes automatically if microphone permission is still granted; if the browser needs to ask again, it waits for your first click, and if access was blocked, it switches itself off.
+  - Browsers stop continuous listening from time to time; Igris restarts it, and backs off if it keeps failing.
+  - Igris only starts listening for your question after it has finished speaking its greeting, so it doesn't hear itself.
+- **Mute:** the speaker button in the chat header turns spoken replies on or off. The choice is remembered in the browser. Speech also stops when the visitor closes the chat, starts a new question, or taps the mic.
+- **Browser support:** spoken replies work in all major browsers. Voice input and "Arise" work in Chrome, Edge and Safari; the mic button is hidden where it isn't supported (for example Firefox), and typing always works.
+- **Requirements:** voice input needs HTTPS (or `localhost`) and the visitor's permission to use the microphone. If access is blocked, Igris says how to allow it.
+- **Privacy:** in Chrome and Edge, speech recognition sends the recorded audio to the browser vendor's speech service to be transcribed. Nothing is recorded or stored by this site; only the transcribed text is sent to `/api/chat`, like a typed question.
 
 **Protection:** questions are limited to 500 characters, and each IP gets 12 questions per minute (`CHAT_RATE_LIMIT`). The limit is kept in memory per gunicorn worker.
 

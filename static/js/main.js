@@ -38,6 +38,7 @@ function startExperience(fromGate) {
   startSoldiers();
   startStepTracker();
   if (fromGate) setTimeout(showSystemAlerts, 800);
+  document.dispatchEvent(new Event('experience:start'));
 }
 
 // ═══ DUNGEON GATE (click, Enter/Space on the button, or Escape) ═══
@@ -394,15 +395,280 @@ function startStepTracker() {
   var history = [];   // completed {role, content} turns, sent for follow-up questions
   var busy = false;
 
+  // ─── Voice: Igris reads replies aloud (speechSynthesis) and takes spoken questions
+  //     (SpeechRecognition). Both are built into the browser; each control only
+  //     appears where the browser supports it.
+  var synth = window.speechSynthesis;
+  var Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var voiceToggle = document.getElementById('chatVoiceToggle');
+  var micBtn = document.getElementById('chatMic');
+  var voiceOn = true;
+  try { voiceOn = localStorage.getItem('igrisVoice') !== 'off'; } catch (e) {}
+  var speakingMsg = null;
+
+  function pickVoice() {
+    var voices = synth.getVoices().filter(function (v) { return /^en/i.test(v.lang); });
+    // A deep British voice suits a shadow knight; fall back to any English voice
+    return voices.filter(function (v) { return /UK English Male|Daniel|Arthur|George|Ryan/i.test(v.name); })[0]
+      || voices.filter(function (v) { return /en[-_]GB/i.test(v.lang); })[0]
+      || voices[0] || null;
+  }
+
+  // Answers are written for reading; smooth out symbols that sound odd aloud
+  function forSpeech(text) {
+    return text
+      .replace(/^[-*•] /gm, '')
+      .replace(/ [|·—] /g, ', ')
+      .replace(/&/g, ' and ')
+      .replace(/~(\d)/g, 'about $1');
+  }
+
+  function stopSpeaking() {
+    if (synth) synth.cancel();
+    if (speakingMsg) { speakingMsg.classList.remove('speaking'); speakingMsg = null; }
+  }
+
+  function speak(text, msg, onDone) {
+    if (!synth || !voiceOn) { if (onDone) onDone(); return; }
+    stopSpeaking();
+    // Queue sentence-sized pieces: Chrome silently stops long single utterances
+    var parts = forSpeech(text).split(/(?<=[.!?;])\s+|\n+/);
+    var voice = pickVoice();
+    speakingMsg = msg;
+    parts.forEach(function (part, i) {
+      part = part.trim();
+      if (!part) return;
+      var u = new SpeechSynthesisUtterance(part);
+      if (voice) { u.voice = voice; u.lang = voice.lang; }
+      u.rate = 0.95;
+      u.pitch = 0.8;
+      if (i === 0) u.onstart = function () { if (speakingMsg === msg) msg.classList.add('speaking'); };
+      if (i === parts.length - 1) u.onend = u.onerror = function () {
+        if (speakingMsg === msg) { msg.classList.remove('speaking'); speakingMsg = null; }
+        if (onDone) onDone();
+      };
+      synth.speak(u);
+    });
+  }
+
+  if (synth && voiceToggle) {
+    voiceToggle.hidden = false;
+    voiceToggle.setAttribute('aria-pressed', String(voiceOn));
+    voiceToggle.addEventListener('click', function () {
+      voiceOn = !voiceOn;
+      voiceToggle.setAttribute('aria-pressed', String(voiceOn));
+      try { localStorage.setItem('igrisVoice', voiceOn ? 'on' : 'off'); } catch (e) {}
+      if (!voiceOn) stopSpeaking();
+    });
+    if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = function () {};  // warms the voice list in Chrome
+  }
+
+  var rec = null;
+  var listening = false;
+  if (Recognition && micBtn) {
+    rec = new Recognition();
+    rec.lang = /^en/i.test(navigator.language) ? navigator.language : 'en-US';
+    rec.interimResults = true;
+    rec.continuous = false;
+    rec.maxAlternatives = 1;
+    var heard = '';
+
+    rec.onstart = function () {
+      listening = true;
+      heard = '';
+      micBtn.setAttribute('aria-pressed', 'true');
+      micBtn.setAttribute('aria-label', 'Stop listening');
+      input.value = '';
+      input.placeholder = 'Listening…';
+    };
+    rec.onresult = function (e) {
+      var text = '';
+      for (var i = 0; i < e.results.length; i++) text += e.results[i][0].transcript;
+      input.value = text;
+      if (e.results[e.results.length - 1].isFinal) heard = text;
+    };
+    rec.onerror = function (e) {
+      var msg = {
+        'not-allowed': 'Microphone access is blocked. Allow it in your browser settings to ask by voice.',
+        'service-not-allowed': 'Voice input isn\'t available in this browser. Please type your question.',
+        'no-speech': 'I didn\'t catch that. Tap the mic and try again.',
+        'audio-capture': 'No microphone was found.',
+        'network': 'Voice input needs an internet connection. Please type your question.'
+      }[e.error];
+      if (msg) addMessage('bot', msg, 'error');
+    };
+    rec.onend = function () {
+      listening = false;
+      setTimeout(startWake, 300);
+      micBtn.setAttribute('aria-pressed', 'false');
+      micBtn.setAttribute('aria-label', 'Ask by voice');
+      input.placeholder = 'Ask about skills, experience…';
+      if (heard.trim()) ask(heard);
+    };
+
+    micBtn.hidden = false;
+    micBtn.addEventListener('click', function () {
+      if (listening) { rec.stop(); return; }
+      if (busy) return;
+      stopSpeaking();
+      stopWake();
+      try { rec.start(); } catch (e) {}  // start() throws if a session is already running
+    });
+  }
+
+  function startQuestionMic() {
+    if (!rec || listening || busy || panel.hidden) return;
+    try { rec.start(); } catch (e) {}
+  }
+
+  // ─── "Arise": an opt-in wake word. While it is on and the chat is closed, a second
+  //     recognizer listens continuously; hearing "Arise" opens Igris, who greets the
+  //     visitor and then listens for a question. "Arise, <question>" asks it directly.
+  //     A dot on the launcher shows whenever the mic is listening for the wake word.
+  var wakeToggle = document.getElementById('chatWakeToggle');
+  var WAKE_WORD = /\ba ?rise\b/i;   // speech engines often hear "Arise" as "a rise"
+  var wakeRec = null;
+  var wakeOn = false;
+  var wakeRunning = false;
+  var wakeStartedAt = 0;
+  var quickEnds = 0;
+  var wakeTimer = null;
+
+  function wakeShouldRun() {
+    return wakeOn && panel.hidden && !listening && !document.hidden && root.classList.contains('started');
+  }
+  function startWake() {
+    clearTimeout(wakeTimer);
+    if (!wakeRec || wakeRunning || !wakeShouldRun()) return;
+    try { wakeRec.start(); wakeRunning = true; } catch (e) {}
+  }
+  function stopWake() {
+    clearTimeout(wakeTimer);
+    if (wakeRec && wakeRunning) wakeRec.abort();
+  }
+  function setWake(on) {
+    wakeOn = on;
+    if (wakeToggle) wakeToggle.setAttribute('aria-pressed', String(on));
+    try { localStorage.setItem('igrisWake', on ? 'on' : 'off'); } catch (e) {}
+    if (on) startWake(); else stopWake();
+  }
+
+  function summon(question) {
+    stopWake();
+    open();
+    if (question.split(/\s+/).length >= 2) { ask(question); return; }
+    // Start listening only after the greeting has been spoken and the wake
+    // recognizer has released the mic, so Igris doesn't hear itself
+    var waiting = 2;
+    function ready() { if (--waiting === 0) setTimeout(startQuestionMic, 150); }
+    wakeReleased = ready;
+    var greeting = 'I am here, my liege. What would you like to know about Abhimithra?';
+    speak(greeting, addMessage('bot', greeting), ready);
+  }
+  var wakeReleased = null;
+
+  if (Recognition && wakeToggle) {
+    wakeRec = new Recognition();
+    wakeRec.lang = rec ? rec.lang : 'en-US';
+    wakeRec.continuous = true;
+    wakeRec.interimResults = true;
+
+    wakeRec.onstart = function () {
+      wakeRunning = true;
+      wakeStartedAt = Date.now();
+      launcher.classList.add('wake-listening');
+      launcher.title = 'Listening for \u201cArise\u201d';
+    };
+    wakeRec.onresult = function (e) {
+      for (var i = e.resultIndex; i < e.results.length; i++) {
+        // Wait for the final result so "Arise, where does he work?" arrives whole
+        if (!e.results[i].isFinal) continue;
+        var text = e.results[i][0].transcript;
+        var m = text.match(WAKE_WORD);
+        if (m) {
+          summon(text.slice(m.index + m[0].length).replace(/^[\s,.!?]+/, '').trim());
+          return;
+        }
+      }
+    };
+    wakeRec.onerror = function (e) {
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed' || e.error === 'audio-capture') {
+        setWake(false);
+        addMessage('bot', 'I couldn\'t start listening for \u201cArise\u201d because the microphone isn\'t available. Allow microphone access and switch it on again.', 'error');
+      }
+    };
+    wakeRec.onend = function () {
+      wakeRunning = false;
+      launcher.classList.remove('wake-listening');
+      launcher.removeAttribute('title');
+      if (wakeReleased) { var cb = wakeReleased; wakeReleased = null; cb(); }
+      if (!wakeShouldRun()) return;
+      // Browsers end continuous recognition periodically; restart, backing off if it keeps failing
+      quickEnds = Date.now() - wakeStartedAt < 2000 ? quickEnds + 1 : 0;
+      wakeTimer = setTimeout(startWake, quickEnds > 3 ? 10000 : 250);
+    };
+
+    wakeToggle.hidden = false;
+    wakeToggle.addEventListener('click', function () {
+      if (wakeOn) {
+        setWake(false);
+        addMessage('bot', 'Understood. I will no longer listen for \u201cArise\u201d.');
+        return;
+      }
+      var enable = function () {
+        setWake(true);
+        var msg = 'Say \u201cArise\u201d any time to summon me, even with this chat closed. I listen only while this switch is on; the glowing dot on my button shows when I am listening.';
+        speak(msg, addMessage('bot', msg));
+      };
+      // Ask for microphone permission now, while the visitor is clicking
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+          stream.getTracks().forEach(function (t) { t.stop(); });
+          enable();
+        }, function () {
+          addMessage('bot', 'Microphone access is blocked, so I can\'t listen for \u201cArise\u201d. Allow it in your browser settings and try again.', 'error');
+        });
+      } else {
+        enable();
+      }
+    });
+
+    // Remembered from an earlier visit: resume without prompting if permission is already granted
+    var saved = null;
+    try { saved = localStorage.getItem('igrisWake'); } catch (e) {}
+    if (saved === 'on') {
+      wakeOn = true;
+      wakeToggle.setAttribute('aria-pressed', 'true');
+      var startOnClick = function () { document.addEventListener('click', startWake, { once: true }); };
+      if (navigator.permissions && navigator.permissions.query) {
+        navigator.permissions.query({ name: 'microphone' }).then(function (status) {
+          if (status.state === 'granted') startWake();
+          else if (status.state === 'denied') setWake(false);
+          else startOnClick();
+        }, startOnClick);
+      } else {
+        startOnClick();
+      }
+    }
+    document.addEventListener('experience:start', startWake);
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) stopWake(); else startWake();
+    });
+  }
+
   function open() {
+    stopWake();
     panel.hidden = false;
     launcher.setAttribute('aria-expanded', 'true');
     input.focus();
   }
   function close() {
+    stopSpeaking();
+    if (listening) rec.abort();
     panel.hidden = true;
     launcher.setAttribute('aria-expanded', 'false');
     launcher.focus();
+    setTimeout(startWake, 300);
   }
   launcher.addEventListener('click', open);
   closeBtn.addEventListener('click', close);
@@ -454,11 +720,13 @@ function startStepTracker() {
   function setBusy(state) {
     busy = state;
     sendBtn.disabled = state;
+    if (micBtn) micBtn.disabled = state;
   }
 
   function ask(question) {
     question = question.trim();
     if (!question || busy) return;
+    stopSpeaking();
     if (suggestions) suggestions.hidden = true;
     addMessage('user', question);
     input.value = '';
@@ -486,6 +754,7 @@ function startStepTracker() {
         typing.remove();
         var msg = addMessage('bot', data.answer);
         addSources(msg, data.sources);
+        speak(data.answer, msg);
         history.push({ role: 'user', content: question }, { role: 'assistant', content: data.answer });
       })
       .catch(function (err) {
