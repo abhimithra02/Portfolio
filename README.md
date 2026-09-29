@@ -24,7 +24,8 @@ A single-page, Solo Leveling–themed portfolio for an AI/ML Engineer. It's a sm
 ```
 app.py                  # Flask app: / renders the page, POST /api/chat answers resume questions
 chatbot.py              # Resume RAG: PDF parsing, chunking, BM25 retrieval, answer generation
-requirements.txt        # flask, gunicorn, pypdf, rank-bm25, anthropic
+requirements.txt        # flask, gunicorn, pypdf, rank-bm25, anthropic, python-dotenv
+.env.example            # Template for a local .env (API key, chatbot settings)
 render.yaml             # Render service config
 templates/index.html    # Page markup + inline <head> script (theme, JS flag, gate skip)
 static/
@@ -81,17 +82,21 @@ Open http://localhost:5000, click **Enter Dungeon**, then **Igris** in the botto
 
 **Optional: Claude-written chatbot answers**
 
-Without a key, the chatbot answers with the matching resume lines. To have Claude write the answers, set your Anthropic API key before starting the app:
-
-```powershell
-$env:ANTHROPIC_API_KEY="sk-ant-..."      # Windows (PowerShell)
-```
+Without a key, the chatbot answers with the matching resume lines. To have Claude write the answers, put your Anthropic API key in a `.env` file (create one at https://console.anthropic.com under Settings → API Keys):
 
 ```bash
-export ANTHROPIC_API_KEY="sk-ant-..."    # Mac / Linux
+cp .env.example .env               # Windows: copy .env.example .env
+```
+
+Open `.env` and fill in the key:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
 ```
 
 Then run `python app.py` again. It should print `LLM answers enabled`.
+
+`.env` is ignored by Git, so the key never gets committed; never put a real key in `.env.example`. You can also set the variable in the terminal instead (`export ANTHROPIC_API_KEY=...`, or `$env:ANTHROPIC_API_KEY="..."` in PowerShell). A variable set in the environment takes precedence over `.env`.
 
 **Run it the way Render does** (Mac / Linux only; gunicorn doesn't run on Windows):
 
@@ -160,6 +165,8 @@ The **Igris** button (bottom right, a knight's helmet with a red plume) opens a 
 **Protection:** questions are limited to 500 characters, and each IP gets 12 questions per minute (`CHAT_RATE_LIMIT`). The limit is kept in memory per gunicorn worker.
 
 Replacing the resume PDF updates the chatbot on the next deploy. If you rename the resume's section headings, update `SECTIONS` in `chatbot.py`.
+
+Set these in a local `.env` file (see `.env.example`) or, on Render, under **Environment**.
 
 | Environment variable | Default | Purpose |
 |---|---|---|

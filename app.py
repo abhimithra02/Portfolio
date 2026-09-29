@@ -4,10 +4,16 @@ import threading
 import time
 from collections import defaultdict, deque
 
+from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from chatbot import ResumeChatbot
+# Load settings such as ANTHROPIC_API_KEY from a local .env file, if there is one.
+# Must run before importing chatbot, which reads its settings at import time.
+# Variables already set in the environment (e.g. on Render) take precedence.
+load_dotenv()
+
+from chatbot import ResumeChatbot  # noqa: E402
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
