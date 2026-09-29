@@ -3,7 +3,12 @@ services:
     name: abhimithra-portfolio
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    # Longer timeout leaves room for the chatbot's LLM call (client timeout 25s, one retry)
+    startCommand: gunicorn app:app --timeout 60
     envVars:
       - key: PYTHON_VERSION
         value: "3.11.0"
+      # Optional: set in the Render dashboard to turn on LLM-written chatbot answers.
+      # Without it the chatbot answers with the matching resume text.
+      - key: ANTHROPIC_API_KEY
+        sync: false
