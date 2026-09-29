@@ -9,7 +9,7 @@ A single-page, Solo Leveling–themed portfolio for an AI/ML Engineer. It's a sm
 - Animated hero stats, skill bars, scroll reveals, particles and shadow soldiers
 - Side step tracker with the active section shown in the tab title
 - Downloadable resume
-- "Ask the System" chatbot that answers visitors' questions from the resume (RAG)
+- "Igris" chatbot that answers visitors' questions from the resume (RAG)
 - Works without JavaScript and respects reduced-motion settings
 
 ## Tech stack
@@ -77,7 +77,7 @@ The terminal should print `Resume index built: 40 chunks` and `Running on http:/
 
 **4. Try it**
 
-Open http://localhost:5000, click **Enter Dungeon**, then **Ask the System** in the bottom-right corner and ask a question, for example "What is his education?".
+Open http://localhost:5000, click **Enter Dungeon**, then **Igris** in the bottom-right corner and ask a question, for example "What is his education?".
 
 **Optional: Claude-written chatbot answers**
 
@@ -149,7 +149,7 @@ The free Render plan puts the service to sleep after 15 minutes without traffic.
 
 ## Resume chatbot
 
-The "Ask the System" button (bottom right) opens a chat that answers questions using only the resume PDF.
+The **Igris** button (bottom right, a knight's helmet with a red plume) opens a chat that answers questions using only the resume PDF.
 
 1. **Load and chunk (at startup):** `chatbot.py` reads `static/resume/Abhimithra_Peddi_Resume.pdf` with pypdf and splits it along the resume's own structure: one chunk per bullet, labelled with its section and job title or project name. It also adds a "career timeline" chunk listing every role.
 2. **Retrieve:** each question is ranked against the chunks with BM25, plus a small synonym list (for example "college" → education). For short follow-ups, the previous question is folded in.

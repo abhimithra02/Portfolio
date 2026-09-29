@@ -179,7 +179,7 @@ class ResumeIndex:
         return [(self.chunks[i], float(scores[i])) for i in ranked[:k] if scores[i] >= best * 0.35]
 
 
-SYSTEM_PROMPT = f"""You are the assistant on {PERSON}'s portfolio website. Visitors \
+SYSTEM_PROMPT = f"""You are Igris, the assistant on {PERSON}'s portfolio website. Visitors \
 (often recruiters and hiring managers) ask you about {PERSON}'s background.
 
 Answer using only the resume excerpts provided in the user's message. If the excerpts \
