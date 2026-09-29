@@ -865,15 +865,38 @@ html:not(.js) .chat { display: none; }
   0%, 100% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.5); }
   50% { box-shadow: 0 0 0 6px rgba(255, 71, 87, 0); }
 }
+.chat-wake {
+  display: flex; align-items: center; gap: 6px;
+  height: 26px; padding: 0 10px; margin-right: 4px;
+  background: none; color: var(--text-muted);
+  border: 1px solid var(--panel-border); border-radius: 13px;
+  font-family: 'Rajdhani', sans-serif; font-size: 0.72rem; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer;
+}
+.chat-wake:hover { border-color: var(--blue); }
+.chat-wake[hidden] { display: none; }
+.chat-wake-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); }
+.chat-wake[aria-pressed="true"] { color: var(--cyan); border-color: var(--cyan); }
+.chat-wake[aria-pressed="true"] .chat-wake-dot { background: var(--cyan); box-shadow: 0 0 6px var(--cyan-glow); }
+/* Shown on the launcher while Igris is listening for "Arise" */
+.chat-launcher.wake-listening::after {
+  content: ''; position: absolute; top: -2px; right: -2px;
+  width: 11px; height: 11px; border-radius: 50%;
+  background: var(--cyan); box-shadow: 0 0 10px var(--cyan);
+  border: 2px solid var(--panel);
+  animation: dot-pulse 1.5s ease-in-out infinite;
+}
 .chat-msg.speaking { border-color: var(--cyan); box-shadow: 0 0 12px var(--cyan-glow); }
 
 @media (max-width: 500px) {
   .chat-launcher { bottom: 16px; right: 16px; width: 46px; padding: 0; justify-content: center; }
   .chat-launcher-text { display: none; }
+  .chat-sub-extra { display: none; }
   .chat-panel { right: 16px; bottom: 16px; height: min(560px, calc(100vh - 32px)); }
 }
 @media (prefers-reduced-motion: reduce) {
   .chat-panel { animation: none; }
   .chat-typing span { animation: none; }
   .chat-form .chat-mic[aria-pressed="true"] { animation: none; }
+  .chat-launcher.wake-listening::after { animation: none; }
 }

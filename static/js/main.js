@@ -38,6 +38,7 @@ function startExperience(fromGate) {
   startSoldiers();
   startStepTracker();
   if (fromGate) setTimeout(showSystemAlerts, 800);
+  document.dispatchEvent(new Event('experience:start'));
 }
 
 // ═══ DUNGEON GATE (click, Enter/Space on the button, or Escape) ═══
@@ -427,8 +428,8 @@ function startStepTracker() {
     if (speakingMsg) { speakingMsg.classList.remove('speaking'); speakingMsg = null; }
   }
 
-  function speak(text, msg) {
-    if (!synth || !voiceOn) return;
+  function speak(text, msg, onDone) {
+    if (!synth || !voiceOn) { if (onDone) onDone(); return; }
     stopSpeaking();
     // Queue sentence-sized pieces: Chrome silently stops long single utterances
     var parts = forSpeech(text).split(/(?<=[.!?;])\s+|\n+/);
@@ -444,6 +445,7 @@ function startStepTracker() {
       if (i === 0) u.onstart = function () { if (speakingMsg === msg) msg.classList.add('speaking'); };
       if (i === parts.length - 1) u.onend = u.onerror = function () {
         if (speakingMsg === msg) { msg.classList.remove('speaking'); speakingMsg = null; }
+        if (onDone) onDone();
       };
       synth.speak(u);
     });
@@ -497,6 +499,7 @@ function startStepTracker() {
     };
     rec.onend = function () {
       listening = false;
+      setTimeout(startWake, 300);
       micBtn.setAttribute('aria-pressed', 'false');
       micBtn.setAttribute('aria-label', 'Ask by voice');
       input.placeholder = 'Ask about skills, experience…';
@@ -508,11 +511,153 @@ function startStepTracker() {
       if (listening) { rec.stop(); return; }
       if (busy) return;
       stopSpeaking();
+      stopWake();
       try { rec.start(); } catch (e) {}  // start() throws if a session is already running
     });
   }
 
+  function startQuestionMic() {
+    if (!rec || listening || busy || panel.hidden) return;
+    try { rec.start(); } catch (e) {}
+  }
+
+  // ─── "Arise": an opt-in wake word. While it is on and the chat is closed, a second
+  //     recognizer listens continuously; hearing "Arise" opens Igris, who greets the
+  //     visitor and then listens for a question. "Arise, <question>" asks it directly.
+  //     A dot on the launcher shows whenever the mic is listening for the wake word.
+  var wakeToggle = document.getElementById('chatWakeToggle');
+  var WAKE_WORD = /\ba ?rise\b/i;   // speech engines often hear "Arise" as "a rise"
+  var wakeRec = null;
+  var wakeOn = false;
+  var wakeRunning = false;
+  var wakeStartedAt = 0;
+  var quickEnds = 0;
+  var wakeTimer = null;
+
+  function wakeShouldRun() {
+    return wakeOn && panel.hidden && !listening && !document.hidden && root.classList.contains('started');
+  }
+  function startWake() {
+    clearTimeout(wakeTimer);
+    if (!wakeRec || wakeRunning || !wakeShouldRun()) return;
+    try { wakeRec.start(); wakeRunning = true; } catch (e) {}
+  }
+  function stopWake() {
+    clearTimeout(wakeTimer);
+    if (wakeRec && wakeRunning) wakeRec.abort();
+  }
+  function setWake(on) {
+    wakeOn = on;
+    if (wakeToggle) wakeToggle.setAttribute('aria-pressed', String(on));
+    try { localStorage.setItem('igrisWake', on ? 'on' : 'off'); } catch (e) {}
+    if (on) startWake(); else stopWake();
+  }
+
+  function summon(question) {
+    stopWake();
+    open();
+    if (question.split(/\s+/).length >= 2) { ask(question); return; }
+    // Start listening only after the greeting has been spoken and the wake
+    // recognizer has released the mic, so Igris doesn't hear itself
+    var waiting = 2;
+    function ready() { if (--waiting === 0) setTimeout(startQuestionMic, 150); }
+    wakeReleased = ready;
+    var greeting = 'I am here, my liege. What would you like to know about Abhimithra?';
+    speak(greeting, addMessage('bot', greeting), ready);
+  }
+  var wakeReleased = null;
+
+  if (Recognition && wakeToggle) {
+    wakeRec = new Recognition();
+    wakeRec.lang = rec ? rec.lang : 'en-US';
+    wakeRec.continuous = true;
+    wakeRec.interimResults = true;
+
+    wakeRec.onstart = function () {
+      wakeRunning = true;
+      wakeStartedAt = Date.now();
+      launcher.classList.add('wake-listening');
+      launcher.title = 'Listening for \u201cArise\u201d';
+    };
+    wakeRec.onresult = function (e) {
+      for (var i = e.resultIndex; i < e.results.length; i++) {
+        // Wait for the final result so "Arise, where does he work?" arrives whole
+        if (!e.results[i].isFinal) continue;
+        var text = e.results[i][0].transcript;
+        var m = text.match(WAKE_WORD);
+        if (m) {
+          summon(text.slice(m.index + m[0].length).replace(/^[\s,.!?]+/, '').trim());
+          return;
+        }
+      }
+    };
+    wakeRec.onerror = function (e) {
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed' || e.error === 'audio-capture') {
+        setWake(false);
+        addMessage('bot', 'I couldn\'t start listening for \u201cArise\u201d because the microphone isn\'t available. Allow microphone access and switch it on again.', 'error');
+      }
+    };
+    wakeRec.onend = function () {
+      wakeRunning = false;
+      launcher.classList.remove('wake-listening');
+      launcher.removeAttribute('title');
+      if (wakeReleased) { var cb = wakeReleased; wakeReleased = null; cb(); }
+      if (!wakeShouldRun()) return;
+      // Browsers end continuous recognition periodically; restart, backing off if it keeps failing
+      quickEnds = Date.now() - wakeStartedAt < 2000 ? quickEnds + 1 : 0;
+      wakeTimer = setTimeout(startWake, quickEnds > 3 ? 10000 : 250);
+    };
+
+    wakeToggle.hidden = false;
+    wakeToggle.addEventListener('click', function () {
+      if (wakeOn) {
+        setWake(false);
+        addMessage('bot', 'Understood. I will no longer listen for \u201cArise\u201d.');
+        return;
+      }
+      var enable = function () {
+        setWake(true);
+        var msg = 'Say \u201cArise\u201d any time to summon me, even with this chat closed. I listen only while this switch is on; the glowing dot on my button shows when I am listening.';
+        speak(msg, addMessage('bot', msg));
+      };
+      // Ask for microphone permission now, while the visitor is clicking
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+          stream.getTracks().forEach(function (t) { t.stop(); });
+          enable();
+        }, function () {
+          addMessage('bot', 'Microphone access is blocked, so I can\'t listen for \u201cArise\u201d. Allow it in your browser settings and try again.', 'error');
+        });
+      } else {
+        enable();
+      }
+    });
+
+    // Remembered from an earlier visit: resume without prompting if permission is already granted
+    var saved = null;
+    try { saved = localStorage.getItem('igrisWake'); } catch (e) {}
+    if (saved === 'on') {
+      wakeOn = true;
+      wakeToggle.setAttribute('aria-pressed', 'true');
+      var startOnClick = function () { document.addEventListener('click', startWake, { once: true }); };
+      if (navigator.permissions && navigator.permissions.query) {
+        navigator.permissions.query({ name: 'microphone' }).then(function (status) {
+          if (status.state === 'granted') startWake();
+          else if (status.state === 'denied') setWake(false);
+          else startOnClick();
+        }, startOnClick);
+      } else {
+        startOnClick();
+      }
+    }
+    document.addEventListener('experience:start', startWake);
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) stopWake(); else startWake();
+    });
+  }
+
   function open() {
+    stopWake();
     panel.hidden = false;
     launcher.setAttribute('aria-expanded', 'true');
     input.focus();
@@ -523,6 +668,7 @@ function startStepTracker() {
     panel.hidden = true;
     launcher.setAttribute('aria-expanded', 'false');
     launcher.focus();
+    setTimeout(startWake, 300);
   }
   launcher.addEventListener('click', open);
   closeBtn.addEventListener('click', close);
