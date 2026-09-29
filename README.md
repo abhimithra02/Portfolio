@@ -31,7 +31,7 @@ templates/index.html    # Page markup + inline <head> script (theme, JS flag, ga
 static/
   css/style.css         # Theme tokens, layout, animations, no-JS / reduced-motion rules
   js/main.js            # All interactive behaviour
-  img/                  # favicon, profile photo
+  img/                  # favicon; profile-320.webp (on-page avatar), profile.webp (link previews), profile.jpg (unused)
   resume/               # Resume PDF (also the chatbot's knowledge source)
 ```
 
@@ -157,7 +157,9 @@ The free Render plan puts the service to sleep after 15 minutes without traffic.
 The **Igris** button (bottom right, a knight's helmet with a red plume) opens a chat that answers questions using only the resume PDF.
 
 1. **Load and chunk (at startup):** `chatbot.py` reads `static/resume/Abhimithra_Peddi_Resume.pdf` with pypdf and splits it along the resume's own structure: one chunk per bullet, labelled with its section and job title or project name. It also adds a "career timeline" chunk listing every role.
-2. **Retrieve:** each question is ranked against the chunks with BM25, plus a small synonym list (for example "college" → education). For short follow-ups, the previous question is folded in.
+2. **Retrieve:** each question is ranked against the chunks with BM25, plus a small synonym list (for example "college" → education). Dotted terms match by their parts ("React" finds "React.js"), and simple plurals are folded ("hackathons" finds "Hackathon"). For short follow-ups, the previous question is folded in.
+   - Broad questions that only name a section ("What projects has Abhimithra built?", "What certifications…?") return every item in that section rather than the top matches.
+   - Greetings, "Who are you?" and "Thanks" get short replies from Igris without searching the resume.
 3. **Answer:**
    - **With `ANTHROPIC_API_KEY` set:** Claude (`claude-opus-5-5` at low effort; override with `CHAT_MODEL`) writes a short answer from the retrieved chunks only. The prompt tells it not to invent facts and to point to the email address when the resume doesn't say. The request opts into server-side refusal fallbacks.
    - **Without a key, or if the API call fails:** the top matching resume lines are returned as they are, so the chatbot always works and costs nothing.
@@ -179,7 +181,9 @@ Igris can listen and talk back, like a voice assistant. Both parts use the brows
 - **Requirements:** voice input needs HTTPS (or `localhost`) and the visitor's permission to use the microphone. If access is blocked, Igris says how to allow it.
 - **Privacy:** in Chrome and Edge, speech recognition sends the recorded audio to the browser vendor's speech service to be transcribed. Nothing is recorded or stored by this site; only the transcribed text is sent to `/api/chat`, like a typed question.
 
-**Protection:** questions are limited to 500 characters, and each IP gets 12 questions per minute (`CHAT_RATE_LIMIT`). The limit is kept in memory per gunicorn worker.
+**Protection:** questions are limited to 500 characters and request bodies to 32 KB, and each IP gets 12 questions per minute (`CHAT_RATE_LIMIT`). The limit is kept in memory per gunicorn worker. API errors are returned as JSON.
+
+Every response also carries basic security headers: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, and a `Permissions-Policy` that allows the microphone for this site only (needed for voice).
 
 Replacing the resume PDF updates the chatbot on the next deploy. If you rename the resume's section headings, update `SECTIONS` in `chatbot.py`.
 

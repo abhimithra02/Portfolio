@@ -61,9 +61,11 @@ SYNONYMS = {
     "study": ["education", "degree"], "studied": ["education", "degree"],
     "college": ["education", "degree"], "university": ["education", "degree"],
     "qualification": ["education", "degree"], "qualifications": ["education", "degree"],
-    "contact": ["email", "linkedin"], "reach": ["email", "linkedin"],
-    "phone": ["contact"], "email": ["contact"], "location": ["hyderabad"],
-    "live": ["hyderabad"], "based": ["hyderabad"],
+    "contact": ["email", "linkedin"], "reach": ["email", "linkedin"], "touch": ["contact", "email"],
+    "phone": ["contact"], "email": ["contact"], "location": ["india", "contact"], "located": ["india", "contact"],
+    "degree": ["education", "diploma"], "degrees": ["education", "diploma"],
+    "first": ["earliest"], "earliest": ["timeline"], "previous": ["timeline"],
+    "live": ["india", "contact"], "based": ["india", "contact"],
     "cloud": ["aws"], "llm": ["llms"], "genai": ["generative"],
     "certification": ["certified"], "certifications": ["certified"],
     "award": ["achievements", "ranked"], "awards": ["achievements", "ranked"],
@@ -74,7 +76,18 @@ SYNONYMS = {
 
 ROLE_LINE = re.compile(r"\|.*\b(19|20)\d{2}\s*$")
 TOKEN = re.compile(r"[a-z0-9][a-z0-9+#.]*[a-z0-9+#]|[a-z0-9]")
-GREETING = re.compile(r"^\s*(hi|hello|hey|hola|namaste|yo|good (morning|afternoon|evening))\b[\s!.?]*$", re.I)
+GREETING = re.compile(r"^\s*(hi|hello|hey|hola|namaste|yo|good (morning|afternoon|evening))(\s+igris)?\b[\s!.?]*$", re.I)
+IDENTITY = re.compile(r"\b(who|what) are you\b|\byour name\b|\bwho is igris\b|\bare you (a |an )?(bot|human|ai|robot)\b", re.I)
+THANKS = re.compile(r"^\s*(thanks|thank you|thank u|thx|ty|cheers)(\s+igris)?\b[\s!.]*$", re.I)
+
+# Broad "list them all" questions: the section keyword is the only meaningful word
+LIST_SECTIONS = {
+    "project": "Projects", "certification": "Certifications & Achievements",
+    "certificate": "Certifications & Achievements", "achievement": "Certifications & Achievements",
+    "skill": "Skills", "education": "Education", "qualification": "Education",
+}
+LIST_FILLER = set("built build done made key main list show all other complete different kind type "
+                  "major notable worked work any".split())
 
 
 @dataclass
@@ -89,13 +102,32 @@ class Chunk:
 
 
 def tokenize(text):
-    words = [w for w in TOKEN.findall(text.lower()) if w not in STOPWORDS]
+    words = []
+    for w in TOKEN.findall(text.lower()):
+        # Keep dotted terms whole and as parts, so "react" matches "React.js"
+        # and "linkedin" matches "linkedin.com"
+        parts = [w] + ([p for p in w.split(".") if p] if "." in w else [])
+        words.extend(p for p in parts if p not in STOPWORDS)
     return words
 
 
+def stem(word):
+    # Light plural folding so "hackathons" matches "Hackathon"
+    if len(word) > 3 and word.endswith("s") and not word.endswith("ss"):
+        return word[:-1]
+    return word
+
+
+# Generic words that only add noise when matched literally ("work" in "production work");
+# they are replaced by their synonyms instead of kept alongside them
+REPLACE_WITH_SYNONYMS = {"work", "worked", "job", "jobs", "career"}
+
+
 def expand(words):
-    out = list(words)
+    out = []
     for w in words:
+        if w not in REPLACE_WITH_SYNONYMS:
+            out.append(w)
         out.extend(SYNONYMS.get(w, []))
     return out
 
@@ -149,7 +181,8 @@ def parse_resume(text):
 
     if roles:
         chunks.append(Chunk("Experience", "Career timeline",
-                            f"Current / most recent role: {roles[0]}. "
+                            f"Currently works as (current / most recent role): {roles[0]}. "
+                            f"First / earliest role: {roles[-1]}. "
                             "Full work history (companies, roles, dates), most recent first: "
                             + "; ".join(roles) + "."))
     return chunks
@@ -161,13 +194,13 @@ class ResumeIndex:
         text = "\n".join(page.extract_text() or "" for page in reader.pages)
         self.chunks = parse_resume(text)
         # Index each chunk with its section and title so "projects", "education" etc. match
-        corpus = [tokenize(f"{c.section} {c.title} {c.text}") for c in self.chunks]
+        corpus = [[stem(w) for w in tokenize(f"{c.section} {c.title} {c.text}")] for c in self.chunks]
         self.bm25 = BM25Okapi(corpus)
         self.profile = next((c for c in self.chunks if c.section == "Profile"), None)
         log.info("Resume index built: %d chunks", len(self.chunks))
 
     def search(self, query, k=TOP_K):
-        words = expand(tokenize(query))
+        words = [stem(w) for w in expand(tokenize(query))]
         if not words:
             return []
         scores = self.bm25.get_scores(words)
@@ -177,6 +210,16 @@ class ResumeIndex:
             return []
         # Keep results reasonably close to the best match
         return [(self.chunks[i], float(scores[i])) for i in ranked[:k] if scores[i] >= best * 0.35]
+
+    def list_section(self, query):
+        """Return a section name if the query just asks to list that section ("what projects has he built?")."""
+        words = {stem(w) for w in tokenize(query)} - LIST_FILLER
+        if len(words) == 1:
+            return LIST_SECTIONS.get(words.pop())
+        return None
+
+    def section_chunks(self, section):
+        return [(c, 1.0) for c in self.chunks if c.section == section]
 
 
 SYSTEM_PROMPT = f"""You are Igris, the assistant on {PERSON}'s portfolio website. Visitors \
@@ -218,10 +261,24 @@ class ResumeChatbot:
                           "projects, education or how to get in touch.",
                 "sources": [], "mode": "greeting",
             }
+        if IDENTITY.search(question):
+            return {
+                "answer": f"I am Igris, a shadow knight summoned to answer questions about {PERSON}'s "
+                          "career. Everything I say comes from the resume. Ask me about experience, "
+                          "skills, projects, education or how to get in touch.",
+                "sources": [], "mode": "greeting",
+            }
+        if THANKS.match(question):
+            return {"answer": f"You're welcome. Ask me anything else about {PERSON}'s background.",
+                    "sources": [], "mode": "greeting"}
 
         # Fold the previous question in so short follow-ups ("and before that?") still retrieve well
         prev_user = next((m["content"] for m in reversed(history) if m["role"] == "user"), "")
-        hits = self.index.search(question) or (self.index.search(f"{prev_user} {question}") if prev_user else [])
+        list_section = self.index.list_section(question)
+        if list_section:
+            hits = self.index.section_chunks(list_section)
+        else:
+            hits = self.index.search(question) or (self.index.search(f"{prev_user} {question}") if prev_user else [])
         sources = [{"section": c.section, "title": c.title} for c, _ in hits]
 
         if self.client is not None:
@@ -232,7 +289,19 @@ class ResumeChatbot:
             except Exception:
                 log.exception("LLM answer failed; falling back to extractive answer")
 
+        if list_section:
+            return {"answer": self._extractive_list(list_section, hits), "sources": sources[:1], "mode": "retrieval"}
         return {"answer": self._extractive(hits), "sources": sources[:EXTRACTIVE_K], "mode": "retrieval"}
+
+    def _extractive_list(self, section, hits):
+        if section == "Projects":
+            lines = [f"The resume lists {len(hits)} key projects:"]
+            lines += [f"- {c.title}" for c, _ in hits]
+            lines.append("Ask about any of them for details.")
+        else:
+            lines = [f"Here's everything the resume lists under {section}:"]
+            lines += [f"- {c.text}" for c, _ in hits]
+        return "\n".join(lines)
 
     def _extractive(self, hits):
         if not hits:

@@ -17,7 +17,9 @@
   --gold: #ffd700;
   --text: #e2e8f0;
   --text-dim: #9aa2c0;
-  --text-muted: #4a5075;
+  --text-muted: #7c83a8;
+  --purple-text: #a58ad6;
+  --user-bubble: #3461e0;
   --bar-bg: #151631;
   --shadow-color: rgba(74, 125, 255, 0.06);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -33,13 +35,15 @@
   --blue-dim: rgba(47, 92, 209, 0.08);
   --purple: #5c3f8a;
   --purple-glow: rgba(92, 63, 138, 0.15);
-  --cyan: #007a94;
+  --cyan: #006a80;
   --cyan-glow: rgba(0, 122, 148, 0.15);
   --red: #d03040;
-  --gold: #a88600;
+  --gold: #7a6200;
   --text: #141726;
   --text-dim: #3b3f58;
-  --text-muted: #6a7090;
+  --text-muted: #555b79;
+  --purple-text: #5c3f8a;
+  --user-bubble: #2f5cd1;
   --bar-bg: #cbd0e0;
   --shadow-color: rgba(47, 92, 209, 0.1);
 }
@@ -220,7 +224,7 @@ html.gate-seen #gate-overlay { display: none; }
 }
 .system-notif::before { content: '[ '; }
 .system-notif::after { content: ' ]'; }
-@keyframes pulse-text { 0%,100%{opacity:.6} 50%{opacity:1} }
+@keyframes pulse-text { 0%,100%{opacity:.85} 50%{opacity:1} }
 
 .typing {
   overflow: hidden; white-space: nowrap;
@@ -379,7 +383,7 @@ html:not(.js) .typing { width: 100%; animation: none; border-right: none; }
 .skill-cat-title {
   font-family: 'Rajdhani', sans-serif;
   font-size: 0.78rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
-  color: var(--purple); margin-bottom: 12px;
+  color: var(--purple-text); margin-bottom: 12px;
   display: flex; align-items: center; gap: 8px;
 }
 .skill-cat-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--purple), transparent); }
@@ -420,7 +424,7 @@ html:not(.js) .skill-bar-fill { width: var(--level); }
 }
 .quest-status.cleared { color: var(--text-dim); border: 1px solid var(--panel-border); }
 .quest-title { font-family: 'Rajdhani', sans-serif; font-size: 1.25rem; font-weight: 700; color: var(--text); margin-bottom: 2px; }
-.quest-org { font-size: 0.88rem; font-weight: 500; color: var(--purple); margin-bottom: 4px; }
+.quest-org { font-size: 0.88rem; font-weight: 500; color: var(--purple-text); margin-bottom: 4px; }
 .quest-time { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; font-weight: 500; color: var(--text-dim); margin-bottom: 12px; }
 .quest-details { display: flex; flex-direction: column; gap: 6px; }
 .quest-detail {
@@ -478,7 +482,7 @@ a.dungeon { text-decoration: none; color: inherit; display: block; }
 }
 .edu-item:hover { border-color: rgba(74,125,255,0.2); }
 .edu-degree { font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 4px; }
-.edu-school { font-size: 0.88rem; font-weight: 500; color: var(--purple); }
+.edu-school { font-size: 0.88rem; font-weight: 500; color: var(--purple-text); }
 .cert-item { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; transition: transform 0.3s ease; }
 .cert-item:hover { transform: translateX(6px); }
 .cert-item:last-child { margin-bottom: 0; }
@@ -718,10 +722,10 @@ a.dungeon { text-decoration: none; color: inherit; display: block; }
   display: flex; align-items: center; justify-content: center;
   box-shadow: 0 0 16px var(--shadow-color);
   transition: all 0.3s ease;
-  opacity: 0; pointer-events: none;
+  opacity: 0; pointer-events: none; visibility: hidden;
   transform: translateY(10px);
 }
-.back-to-top.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
+.back-to-top.show { opacity: 1; pointer-events: auto; visibility: visible; transform: translateY(0); }
 .back-to-top:hover {
   border-color: var(--blue);
   box-shadow: 0 0 20px var(--blue-glow);
@@ -801,7 +805,7 @@ html:not(.js) .chat { display: none; }
 .chat-msg ul { padding-left: 18px; }
 .chat-msg li + li { margin-top: 4px; }
 .chat-msg.bot { align-self: flex-start; background: var(--abyss); border: 1px solid var(--panel-border); color: var(--text); }
-.chat-msg.user { align-self: flex-end; background: var(--blue); color: #fff; }
+.chat-msg.user { align-self: flex-end; background: var(--user-bubble); color: #fff; }
 .chat-msg.error { border-color: var(--red); }
 .chat-sources {
   margin-top: 8px; font-family: 'JetBrains Mono', monospace;
