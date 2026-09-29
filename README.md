@@ -10,13 +10,16 @@ A single-page, Solo Leveling–themed portfolio for an AI/ML Engineer. It's a sm
 - Side step tracker with the active section shown in the tab title
 - Downloadable resume
 - "Igris" chatbot that answers visitors' questions from the resume (RAG), by text or by voice
+- Say "Arise" to summon Igris hands-free (opt-in wake word)
 - Works without JavaScript and respects reduced-motion settings
+- Accessible: WCAG AA text contrast in both themes, full keyboard navigation, screen-reader landmarks
 
 ## Tech stack
 
 - **Backend:** Python 3.11, Flask 3, gunicorn
 - **Chatbot:** pypdf (resume parsing), rank-bm25 (retrieval), Anthropic SDK (optional answer writing)
 - **Frontend:** plain HTML, CSS and JavaScript. No frameworks and no build step.
+- **Voice:** the browser's built-in Web Speech API (speech recognition and speech synthesis)
 - **Hosting:** Render web service (`render.yaml`)
 
 ## Project structure
@@ -42,8 +45,8 @@ You need **Python 3.10 or newer** and **Git**. Check with `python --version` and
 **1. Get the code**
 
 ```bash
-git clone https://github.com/abhimithra02/website.git
-cd website
+git clone https://github.com/abhimithra02/Portfolio.git
+cd Portfolio
 ```
 
 If you already have it, run `git checkout main && git pull` instead.
@@ -78,7 +81,7 @@ The terminal should print `Resume index built: 40 chunks` and `Running on http:/
 
 **4. Try it**
 
-Open http://localhost:5000, click **Enter Dungeon**, then **Igris** in the bottom-right corner and ask a question, for example "What is his education?". To ask by voice, tap the microphone and speak; Igris reads the answer aloud.
+Open http://localhost:5000, click **Enter Dungeon**, then **Igris** in the bottom-right corner and ask a question, for example "What certifications are listed?". To ask by voice, tap the microphone and speak; Igris reads the answer aloud.
 
 **Optional: Claude-written chatbot answers**
 
@@ -170,7 +173,7 @@ Igris can listen and talk back, like a voice assistant. Both parts use the brows
 
 - **Asking by voice:** tap the microphone next to the text box and speak. The words appear as you talk, and the question is sent when you stop. Tap again to stop early.
 - **Spoken replies:** Igris reads each answer aloud, preferring a deep British English voice (rate 0.95, pitch 0.8) and falling back to any English voice on the device. The reply glows while it is spoken. Long answers are spoken sentence by sentence, because Chrome cuts off long single utterances.
-- **"Arise" wake word:** turn on the **Arise** switch in the chat header, then close the chat and say "Arise" to summon Igris. Igris opens, says "I am here, my liege…", and listens for your question. Saying "Arise, where does he work?" in one go opens Igris and asks straight away. "A rise" is also accepted, because speech engines often hear it that way.
+- **"Arise" wake word:** turn on the **Arise** switch in the chat header, then close the chat and say "Arise" to summon Igris. Igris opens, says "I am here, my liege…", and listens for your question. Saying "Arise, what is the current role?" in one go opens Igris and asks straight away. "A rise" is also accepted, because speech engines often hear it that way.
   - It is opt-in and off by default. The browser asks for microphone permission when you switch it on.
   - Igris listens for the wake word only while the switch is on, the chat is closed, and the tab is visible. A glowing dot on the Igris button shows whenever it is listening.
   - The choice is remembered. On later visits it resumes automatically if microphone permission is still granted; if the browser needs to ask again, it waits for your first click, and if access was blocked, it switches itself off.
@@ -202,7 +205,30 @@ All content is in `templates/index.html`:
 - **Hero stats:** `<span class="counter" data-target="N">N</span>`. Keep both numbers the same. "Dungeons Cleared" should match the number of project cards.
 - **Skill bars:** set `data-level="N"`, `style="--level:N%"`, `aria-valuenow="N"` and the visible level to the same value.
 - **Sections:** each `<section data-step="N">` has a matching dot in the step tracker. Tab titles are set in `sectionNames` in `static/js/main.js`.
-- **Resume:** replace `static/resume/Abhimithra_Peddi_Resume.pdf`, keeping the same file name.
+- **Resume:** replace `static/resume/Abhimithra_Peddi_Resume.pdf`, keeping the same file name. The chatbot re-reads it on the next start.
+- **Profile photo:** the page shows `static/img/profile-320.webp` (320 × 320, about 15 KB); `profile.webp` is the full-size copy used for link previews. After replacing the photo, regenerate the small copy, for example with Pillow:
+
+  ```bash
+  pip install pillow
+  python -c "from PIL import Image; Image.open('static/img/profile.webp').convert('RGB').resize((320, 320)).save('static/img/profile-320.webp', quality=82)"
+  ```
+
+- **Igris's suggested questions:** the buttons inside `#chatSuggestions` in `templates/index.html`. Igris's replies to greetings, "Who are you?" and "Thanks" are in `chatbot.py`.
+- **Colours:** theme colours are CSS variables at the top of `static/css/style.css` (`:root` for dark, `[data-theme="light"]` for light). Text colours were chosen to meet WCAG AA contrast (4.5:1); re-check contrast if you change them.
+
+## Quality checks
+
+There is no automated test suite; after changes, check these by hand (Chrome DevTools covers most of them):
+
+| Check | How |
+|---|---|
+| Page and chatbot work | Run the app, enter through the gate, ask Igris a few questions by typing and by voice |
+| Chat API rejects bad input | `curl -X POST localhost:5000/api/chat -H "Content-Type: application/json" -d "[1]"` should return 400, not 500 |
+| Accessibility | Lighthouse (DevTools → Lighthouse → Accessibility) or the axe DevTools extension should report no contrast issues, in both themes |
+| No-JS fallback | DevTools → Settings → Debugger → Disable JavaScript: all content should show, with no gate and no chat button |
+| Reduced motion | DevTools → Rendering → "Emulate CSS prefers-reduced-motion: reduce": no gate, no animations |
+| Mobile | DevTools device toolbar at 320–414 px: no sideways scrolling, and the chat panel fits the screen |
+| Security headers | `curl -I localhost:5000/` should show `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` and `Permissions-Policy` |
 
 ## Contact
 
