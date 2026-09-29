@@ -36,18 +36,77 @@ static/
 
 ## Run locally
 
+You need **Python 3.10 or newer** and **Git**. Check with `python --version` and `git --version`; on Mac, use `python3` if `python` isn't found.
+
+**1. Get the code**
+
 ```bash
+git clone https://github.com/abhimithra02/website.git
+cd website
+```
+
+If you already have it, run `git checkout main && git pull` instead.
+
+**2. Create a virtual environment and install dependencies**
+
+Windows (PowerShell):
+
+```powershell
 python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
+.venv\Scripts\activate
 pip install -r requirements.txt
-python app.py                    # http://localhost:5000
 ```
 
-Or run it the way Render does:
+Mac / Linux:
 
 ```bash
-gunicorn app:app
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
+
+The prompt shows `(.venv)` while the environment is active.
+
+**3. Start the app**
+
+```bash
+python app.py
+```
+
+The terminal should print `Resume index built: 40 chunks` and `Running on http://127.0.0.1:5000`. Keep it open, and stop it with Ctrl+C.
+
+**4. Try it**
+
+Open http://localhost:5000, click **Enter Dungeon**, then **Ask the System** in the bottom-right corner and ask a question, for example "What is his education?".
+
+**Optional: Claude-written chatbot answers**
+
+Without a key, the chatbot answers with the matching resume lines. To have Claude write the answers, set your Anthropic API key before starting the app:
+
+```powershell
+$env:ANTHROPIC_API_KEY="sk-ant-..."      # Windows (PowerShell)
+```
+
+```bash
+export ANTHROPIC_API_KEY="sk-ant-..."    # Mac / Linux
+```
+
+Then run `python app.py` again. It should print `LLM answers enabled`.
+
+**Run it the way Render does** (Mac / Linux only; gunicorn doesn't run on Windows):
+
+```bash
+gunicorn app:app --timeout 60
+```
+
+**Troubleshooting**
+
+| Problem | Fix |
+|---|---|
+| Windows: "running scripts is disabled" when activating | Run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, answer **Y**, then activate again |
+| Mac: port 5000 already in use (AirPlay Receiver) | Turn off AirPlay Receiver in System Settings, or run `flask --app app run --port 5001` and open http://localhost:5001 |
+| `pip install` fails | Upgrade pip with `python -m pip install --upgrade pip` and try again |
+| Chatbot says it is unavailable | Check the terminal for errors; the resume PDF must be at `static/resume/Abhimithra_Peddi_Resume.pdf` |
 
 ## Deploy (Render)
 
