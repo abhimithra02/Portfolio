@@ -6,6 +6,7 @@ from collections import defaultdict, deque
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request
+from werkzeug.exceptions import HTTPException
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Load settings such as ANTHROPIC_API_KEY from a local .env file, if there is one.
@@ -22,6 +23,8 @@ app = Flask(__name__)
 # Render terminates HTTPS at its proxy; trust X-Forwarded-For/Proto/Host so
 # _external URLs (og:image, og:url) come out as https:// and rate limiting sees the real client IP
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+# Chat requests are tiny; reject oversized bodies before they are read into memory
+app.config["MAX_CONTENT_LENGTH"] = 32 * 1024
 
 # Build the resume index once at startup; the page still works if this fails
 try:
@@ -72,6 +75,25 @@ def _clean_history(raw):
     return turns
 
 
+@app.after_request
+def security_headers(response):
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    # The chatbot's voice features need the microphone on this site only
+    response.headers.setdefault("Permissions-Policy", "microphone=(self), camera=(), geolocation=()")
+    return response
+
+
+@app.errorhandler(HTTPException)
+def api_http_error(e):
+    # API callers get JSON errors; page requests keep Flask's default HTML pages
+    if request.path.startswith("/api/"):
+        messages = {413: "That request is too large.", 404: "Not found.", 405: "Use POST for this endpoint."}
+        return jsonify(error=messages.get(e.code, e.name)), e.code
+    return e
+
+
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -84,7 +106,9 @@ def chat():
     if _rate_limited(request.remote_addr or "unknown"):
         return jsonify(error="Too many questions at once. Please wait a minute and try again."), 429
 
-    data = request.get_json(silent=True) or {}
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        data = {}
     question = data.get("question")
     if not isinstance(question, str) or not question.strip():
         return jsonify(error="Please type a question."), 400

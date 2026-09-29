@@ -580,6 +580,7 @@ function startStepTracker() {
       launcher.title = 'Listening for \u201cArise\u201d';
     };
     wakeRec.onresult = function (e) {
+      if (!panel.hidden) return;  // already summoned; ignore a repeated "Arise"
       for (var i = e.resultIndex; i < e.results.length; i++) {
         // Wait for the final result so "Arise, where does he work?" arrives whole
         if (!e.results[i].isFinal) continue;

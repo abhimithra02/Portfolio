@@ -115,10 +115,10 @@
       <div class="chat-msg bot"><p>Igris, at your command. Ask me about Abhimithra's experience, skills, projects or education.</p></div>
     </div>
     <div class="chat-suggestions" id="chatSuggestions">
-      <button type="button">What is his current role?</button>
-      <button type="button">What RAG projects has he built?</button>
-      <button type="button">Which cloud tools does he use?</button>
-      <button type="button">How can I contact him?</button>
+      <button type="button">What is the current role?</button>
+      <button type="button">Which RAG projects are there?</button>
+      <button type="button">Which cloud tools are used?</button>
+      <button type="button">How can I get in touch?</button>
     </div>
     <form class="chat-form" id="chatForm">
       <label class="visually-hidden" for="chatInput">Your question</label>
@@ -152,7 +152,7 @@
   <a href="#step-education" class="step-dot" data-step="6" title="Education"><span class="step-label">Education</span></a>
 </nav>
 
-<div class="main">
+<main class="main">
   <div class="system-notif reveal">A new player has entered the field</div>
 
   <!-- ═══ STEP 1: PLAYER IDENTITY ═══ -->
@@ -163,7 +163,7 @@
       <div class="avatar-container reveal-scale">
         <div class="avatar-ring"></div>
         <div class="avatar-ring-2"></div>
-        <img class="avatar-img" src="{{ url_for('static', filename='img/profile.webp') }}" alt="Abhimithra Peddi" loading="eager">
+        <img class="avatar-img" src="{{ url_for('static', filename='img/profile-320.webp') }}" width="160" height="160" alt="Abhimithra Peddi" loading="eager">
       </div>
       <div class="hero-rank">S-Rank Hunter</div>
       <h1>ABHIMITHRA PEDDI</h1>
@@ -433,7 +433,7 @@
     <div class="system-notif" style="margin-bottom: 8px;">System Status: Online</div>
     <a href="mailto:abhimithrapeddi07@gmail.com">abhimithrapeddi07@gmail.com</a> &middot; Hyderabad, India
   </footer>
-</div>
+</main>
 
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
