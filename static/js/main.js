@@ -405,6 +405,7 @@ function startStepTracker() {
   var voiceOn = true;
   try { voiceOn = localStorage.getItem('igrisVoice') !== 'off'; } catch (e) {}
   var speakingMsg = null;
+  var utterances = [];   // Chrome can drop onend for utterances nothing references
 
   function pickVoice() {
     var voices = synth.getVoices().filter(function (v) { return /^en/i.test(v.lang); });
@@ -424,6 +425,7 @@ function startStepTracker() {
   }
 
   function stopSpeaking() {
+    utterances = [];
     if (synth) synth.cancel();
     if (speakingMsg) { speakingMsg.classList.remove('speaking'); speakingMsg = null; }
   }
@@ -431,14 +433,17 @@ function startStepTracker() {
   function speak(text, msg, onDone) {
     if (!synth || !voiceOn) { if (onDone) onDone(); return; }
     stopSpeaking();
-    // Queue sentence-sized pieces: Chrome silently stops long single utterances
-    var parts = forSpeech(text).split(/(?<=[.!?;])\s+|\n+/);
+    // Queue sentence-sized pieces: Chrome silently stops long single utterances.
+    // (No regex lookbehind here: older Safari can't parse it, which would break the whole script.)
+    var parts = forSpeech(text).replace(/([.!?;])\s+/g, '$1\n').split('\n')
+      .map(function (p) { return p.trim(); })
+      .filter(Boolean);
+    if (!parts.length) { if (onDone) onDone(); return; }
     var voice = pickVoice();
     speakingMsg = msg;
     parts.forEach(function (part, i) {
-      part = part.trim();
-      if (!part) return;
       var u = new SpeechSynthesisUtterance(part);
+      utterances.push(u);
       if (voice) { u.voice = voice; u.lang = voice.lang; }
       u.rate = 0.95;
       u.pitch = 0.8;
@@ -526,7 +531,9 @@ function startStepTracker() {
   //     visitor and then listens for a question. "Arise, <question>" asks it directly.
   //     A dot on the launcher shows whenever the mic is listening for the wake word.
   var wakeToggle = document.getElementById('chatWakeToggle');
-  var WAKE_WORD = /\ba ?rise\b/i;   // speech engines often hear "Arise" as "a rise"
+  // Speech engines often hear "Arise" as "a rise"; accept that only at the start of a
+  // phrase, so ordinary speech ("there was a rise in prices") doesn't summon Igris
+  var WAKE_WORD = /^\W*a ?rise\b|\barise\b/i;
   var wakeRec = null;
   var wakeOn = false;
   var wakeRunning = false;
@@ -556,7 +563,11 @@ function startStepTracker() {
   function summon(question) {
     stopWake();
     open();
-    if (question.split(/\s+/).length >= 2) { ask(question); return; }
+    if (question.split(/\s+/).length >= 2) {
+      // An earlier answer may still be loading; ask this one as soon as it arrives
+      if (busy) queuedQuestion = question; else ask(question);
+      return;
+    }
     // Start listening only after the greeting has been spoken and the wake
     // recognizer has released the mic, so Igris doesn't hear itself
     var waiting = 2;
@@ -566,6 +577,7 @@ function startStepTracker() {
     speak(greeting, addMessage('bot', greeting), ready);
   }
   var wakeReleased = null;
+  var queuedQuestion = null;
 
   if (Recognition && wakeToggle) {
     wakeRec = new Recognition();
@@ -755,7 +767,8 @@ function startStepTracker() {
         typing.remove();
         var msg = addMessage('bot', data.answer);
         addSources(msg, data.sources);
-        speak(data.answer, msg);
+        // The visitor may have closed the chat while waiting; don't talk to an empty room
+        if (!panel.hidden) speak(data.answer, msg);
         history.push({ role: 'user', content: question }, { role: 'assistant', content: data.answer });
       })
       .catch(function (err) {
@@ -766,6 +779,7 @@ function startStepTracker() {
       .then(function () {
         setBusy(false);
         input.focus();
+        if (queuedQuestion) { var next = queuedQuestion; queuedQuestion = null; ask(next); }
       });
   }
 

@@ -173,12 +173,13 @@ Igris can listen and talk back, like a voice assistant. Both parts use the brows
 
 - **Asking by voice:** tap the microphone next to the text box and speak. The words appear as you talk, and the question is sent when you stop. Tap again to stop early.
 - **Spoken replies:** Igris reads each answer aloud, preferring a deep British English voice (rate 0.95, pitch 0.8) and falling back to any English voice on the device. The reply glows while it is spoken. Long answers are spoken sentence by sentence, because Chrome cuts off long single utterances.
-- **"Arise" wake word:** turn on the **Arise** switch in the chat header, then close the chat and say "Arise" to summon Igris. Igris opens, says "I am here, my liege…", and listens for your question. Saying "Arise, what is the current role?" in one go opens Igris and asks straight away. "A rise" is also accepted, because speech engines often hear it that way.
+- **"Arise" wake word:** turn on the **Arise** switch in the chat header, then close the chat and say "Arise" to summon Igris. Igris opens, says "I am here, my liege…", and listens for your question. Saying "Arise, what is the current role?" in one go opens Igris and asks straight away. "A rise" is also accepted at the start of a phrase, because speech engines often hear it that way; "a rise" in the middle of ordinary speech ("there was a rise in prices") is ignored.
   - It is opt-in and off by default. The browser asks for microphone permission when you switch it on.
   - Igris listens for the wake word only while the switch is on, the chat is closed, and the tab is visible. A glowing dot on the Igris button shows whenever it is listening.
   - The choice is remembered. On later visits it resumes automatically if microphone permission is still granted; if the browser needs to ask again, it waits for your first click, and if access was blocked, it switches itself off.
   - Browsers stop continuous listening from time to time; Igris restarts it, and backs off if it keeps failing.
   - Igris only starts listening for your question after it has finished speaking its greeting, so it doesn't hear itself.
+- If you say "Arise, <question>" while an earlier answer is still loading, the question is asked as soon as that answer arrives. An answer that arrives after you close the chat is shown but not spoken.
 - **Mute:** the speaker button in the chat header turns spoken replies on or off. The choice is remembered in the browser. Speech also stops when the visitor closes the chat, starts a new question, or taps the mic.
 - **Browser support:** spoken replies work in all major browsers. Voice input and "Arise" work in Chrome, Edge and Safari; the mic button is hidden where it isn't supported (for example Firefox), and typing always works.
 - **Requirements:** voice input needs HTTPS (or `localhost`) and the visitor's permission to use the microphone. If access is blocked, Igris says how to allow it.
