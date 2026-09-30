@@ -478,9 +478,40 @@ function startStepTracker() {
       })
     : Promise.reject()).catch(function () {});
   function explainMicPrompt() {
-    if (micPermission !== 'prompt') return;
-    addMessage('bot', 'Your browser will ask once to use the microphone. Choose the option that keeps it allowed for this site (not \u201cthis time only\u201d), and it won\u2019t ask again.');
+    if (micPermission !== 'prompt' || micHeld()) return;
+    addMessage('bot', holdMic
+      ? 'Your browser will ask to use the microphone. Allow it and I won\u2019t ask again during this visit. To stop Safari asking on every visit, tap \u201caA\u201d in the address bar, then Website Settings \u203a Microphone \u203a Allow.'
+      : 'Your browser will ask once to use the microphone. Choose the option that keeps it allowed for this site (not \u201cthis time only\u201d), and it won\u2019t ask again.');
   }
+
+  // On Apple devices (every iPhone and iPad browser, and Safari on Mac) speech recognition
+  // asks for the microphone again each time it starts, unless the page already has the
+  // microphone open. There, the first mic tap opens it once and Igris holds it while voice
+  // is in use, releasing it when the chat closes (unless "Arise" is on).
+  var ua = navigator.userAgent;
+  var holdMic = /iP(hone|ad|od)/.test(ua) || (/Macintosh/.test(ua) &&
+    (navigator.maxTouchPoints > 1 || (/Safari\//.test(ua) && !/Chrome|Chromium|Edg|OPR|Firefox/.test(ua))));
+  var micStream = null;
+  function micHeld() {
+    return !!micStream && micStream.getAudioTracks().some(function (t) { return t.readyState === 'live'; });
+  }
+  function holdMicThen(done) {   // done(ok); synchronous where nothing needs holding
+    if (!holdMic || micHeld() || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { done(true); return; }
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+      releaseMic();
+      micStream = stream;
+      done(true);
+    }, function () { done(false); });
+  }
+  function releaseMic() {
+    if (micStream) micStream.getTracks().forEach(function (t) { t.stop(); });
+    micStream = null;
+  }
+  // Igris starts the mic on its own (follow-ups, "Arise") only when that can't pop up a prompt
+  function canListenQuietly() {
+    return holdMic ? micHeld() : micPermission !== 'prompt' && micPermission !== 'denied';
+  }
+  window.addEventListener('pagehide', releaseMic);
 
   var rec = null;
   var listening = false;
@@ -535,14 +566,17 @@ function startStepTracker() {
       stopSpeaking();
       stopWake();
       explainMicPrompt();
-      try { rec.start(); } catch (e) {}  // start() throws if a session is already running
+      holdMicThen(function (ok) {
+        if (!ok) { addMessage('bot', 'Microphone access is blocked. Allow it in your browser settings to ask by voice.', 'error'); return; }
+        try { rec.start(); } catch (e) {}  // start() throws if a session is already running
+      });
     });
     // Typing takes over from an automatic follow-up
     input.addEventListener('keydown', function () { if (listening && followUp) rec.abort(); });
   }
 
   function startQuestionMic(isFollowUp) {
-    if (!rec || listening || busy || panel.hidden) return;
+    if (!rec || listening || busy || panel.hidden || !canListenQuietly()) return;
     try { rec.start(); followUp = !!isFollowUp; } catch (e) {}
   }
 
@@ -566,7 +600,7 @@ function startStepTracker() {
   }
   function startWake() {
     clearTimeout(wakeTimer);
-    if (!wakeRec || wakeRunning || !wakeShouldRun()) return;
+    if (!wakeRec || wakeRunning || !wakeShouldRun() || !canListenQuietly()) return;
     try { wakeRec.start(); wakeRunning = true; } catch (e) {}
   }
   function stopWake() {
@@ -577,7 +611,7 @@ function startStepTracker() {
     wakeOn = on;
     if (wakeToggle) wakeToggle.setAttribute('aria-pressed', String(on));
     try { localStorage.setItem('igrisWake', on ? 'on' : 'off'); } catch (e) {}
-    if (on) startWake(); else stopWake();
+    if (on) startWake(); else { stopWake(); if (panel.hidden) releaseMic(); }
   }
 
   function summon(question) {
@@ -657,7 +691,9 @@ function startStepTracker() {
       explainMicPrompt();
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
-          stream.getTracks().forEach(function (t) { t.stop(); });
+          if (holdMic) { releaseMic(); micStream = stream; }   // keep it, so listening won't ask again
+          else stream.getTracks().forEach(function (t) { t.stop(); });
+          micPermission = 'granted';
           enable();
         }, function () {
           addMessage('bot', 'Microphone access is blocked, so I can\'t listen for \u201cArise\u201d. Allow it in your browser settings and try again.', 'error');
@@ -674,7 +710,8 @@ function startStepTracker() {
     try { saved = localStorage.getItem('igrisWake'); } catch (e) {}
     if (saved === 'on') {
       permissionReady.then(function () {
-        if (micPermission === 'granted') {
+        // Apple devices would ask again without a held microphone, so they wait for a tap
+        if (micPermission === 'granted' && !holdMic) {
           wakeOn = true;
           wakeToggle.setAttribute('aria-pressed', 'true');
           startWake();
@@ -698,6 +735,7 @@ function startStepTracker() {
   function close() {
     stopSpeaking();
     if (listening) rec.abort();
+    if (!wakeOn) releaseMic();
     panel.hidden = true;
     launcher.setAttribute('aria-expanded', 'false');
     launcher.focus();
