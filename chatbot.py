@@ -49,13 +49,15 @@ him his how i in into is it its me my of on or our she so tell that the their th
 there these they this to was we were what when where which who whom why will with
 would you your about any some please know knows does done use used using list give
 all many much familiar also abhimithra peddi abhi mithra
+um uh er erm hmm ok okay so well
 """.split())
 
 # Words a visitor might use that the resume phrases differently
 SYNONYMS = {
     "job": ["experience", "engineer"], "jobs": ["experience", "engineer"],
-    "work": ["experience"], "worked": ["experience"], "career": ["experience"],
-    "company": ["experience"], "companies": ["experience"], "employer": ["experience"],
+    "work": ["experience", "timeline"], "worked": ["experience"], "career": ["experience"],
+    "working": ["experience", "timeline"], "company": ["experience", "timeline"],
+    "companies": ["experience", "timeline"], "employer": ["experience", "timeline"],
     "current": ["timeline"], "currently": ["timeline"], "now": ["timeline"],
     "latest": ["timeline"], "recent": ["timeline"], "history": ["timeline"],
     "study": ["education", "degree"], "studied": ["education", "degree"],
@@ -120,7 +122,7 @@ def stem(word):
 
 # Generic words that only add noise when matched literally ("work" in "production work");
 # they are replaced by their synonyms instead of kept alongside them
-REPLACE_WITH_SYNONYMS = {"work", "worked", "job", "jobs", "career"}
+REPLACE_WITH_SYNONYMS = {"work", "worked", "working", "job", "jobs", "career"}
 
 
 def expand(words):
