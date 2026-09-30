@@ -468,8 +468,23 @@ function startStepTracker() {
     if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = function () {};  // warms the voice list in Chrome
   }
 
+  // Browsers always ask once before a site may use the microphone. Track the answer so
+  // Igris can explain the prompt before it appears, and never trigger it unexpectedly.
+  var micPermission = 'unknown';
+  var permissionReady = (navigator.permissions && navigator.permissions.query
+    ? navigator.permissions.query({ name: 'microphone' }).then(function (status) {
+        micPermission = status.state;
+        status.onchange = function () { micPermission = status.state; };
+      })
+    : Promise.reject()).catch(function () {});
+  function explainMicPrompt() {
+    if (micPermission !== 'prompt') return;
+    addMessage('bot', 'Your browser will ask once to use the microphone. Choose the option that keeps it allowed for this site (not \u201cthis time only\u201d), and it won\u2019t ask again.');
+  }
+
   var rec = null;
   var listening = false;
+  var followUp = false;   // listening for a follow-up on its own, like a voice assistant
   if (Recognition && micBtn) {
     rec = new Recognition();
     rec.lang = /^en/i.test(navigator.language) ? navigator.language : 'en-US';
@@ -500,15 +515,17 @@ function startStepTracker() {
         'audio-capture': 'No microphone was found.',
         'network': 'Voice input needs an internet connection. Please type your question.'
       }[e.error];
+      if (e.error === 'no-speech' && followUp) return;  // the visitor is done talking
       if (msg) addMessage('bot', msg, 'error');
     };
     rec.onend = function () {
       listening = false;
+      followUp = false;
       setTimeout(startWake, 300);
       micBtn.setAttribute('aria-pressed', 'false');
       micBtn.setAttribute('aria-label', 'Ask by voice');
       input.placeholder = 'Ask about skills, experience…';
-      if (heard.trim()) ask(heard);
+      if (heard.trim()) ask(heard, true);
     };
 
     micBtn.hidden = false;
@@ -517,13 +534,16 @@ function startStepTracker() {
       if (busy) return;
       stopSpeaking();
       stopWake();
+      explainMicPrompt();
       try { rec.start(); } catch (e) {}  // start() throws if a session is already running
     });
+    // Typing takes over from an automatic follow-up
+    input.addEventListener('keydown', function () { if (listening && followUp) rec.abort(); });
   }
 
-  function startQuestionMic() {
+  function startQuestionMic(isFollowUp) {
     if (!rec || listening || busy || panel.hidden) return;
-    try { rec.start(); } catch (e) {}
+    try { rec.start(); followUp = !!isFollowUp; } catch (e) {}
   }
 
   // ─── "Arise": an opt-in wake word. While it is on and the chat is closed, a second
@@ -565,7 +585,7 @@ function startStepTracker() {
     open();
     if (question.split(/\s+/).length >= 2) {
       // An earlier answer may still be loading; ask this one as soon as it arrives
-      if (busy) queuedQuestion = question; else ask(question);
+      if (busy) queuedQuestion = question; else ask(question, true);
       return;
     }
     // Start listening only after the greeting has been spoken and the wake
@@ -634,6 +654,7 @@ function startStepTracker() {
         speak(msg, addMessage('bot', msg));
       };
       // Ask for microphone permission now, while the visitor is clicking
+      explainMicPrompt();
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
           stream.getTracks().forEach(function (t) { t.stop(); });
@@ -646,22 +667,21 @@ function startStepTracker() {
       }
     });
 
-    // Remembered from an earlier visit: resume without prompting if permission is already granted
+    // Remembered from an earlier visit: resume only if the microphone is still allowed, so a
+    // visit never opens with a surprise permission prompt. Otherwise the switch stays off
+    // until the visitor turns it on again (the saved choice is kept for when access returns).
     var saved = null;
     try { saved = localStorage.getItem('igrisWake'); } catch (e) {}
     if (saved === 'on') {
-      wakeOn = true;
-      wakeToggle.setAttribute('aria-pressed', 'true');
-      var startOnClick = function () { document.addEventListener('click', startWake, { once: true }); };
-      if (navigator.permissions && navigator.permissions.query) {
-        navigator.permissions.query({ name: 'microphone' }).then(function (status) {
-          if (status.state === 'granted') startWake();
-          else if (status.state === 'denied') setWake(false);
-          else startOnClick();
-        }, startOnClick);
-      } else {
-        startOnClick();
-      }
+      permissionReady.then(function () {
+        if (micPermission === 'granted') {
+          wakeOn = true;
+          wakeToggle.setAttribute('aria-pressed', 'true');
+          startWake();
+        } else if (micPermission === 'denied') {
+          setWake(false);
+        }
+      });
     }
     document.addEventListener('experience:start', startWake);
     document.addEventListener('visibilitychange', function () {
@@ -736,7 +756,7 @@ function startStepTracker() {
     if (micBtn) micBtn.disabled = state;
   }
 
-  function ask(question) {
+  function ask(question, byVoice) {
     question = question.trim();
     if (!question || busy) return;
     stopSpeaking();
@@ -767,8 +787,11 @@ function startStepTracker() {
         typing.remove();
         var msg = addMessage('bot', data.answer);
         addSources(msg, data.sources);
-        // The visitor may have closed the chat while waiting; don't talk to an empty room
-        if (!panel.hidden) speak(data.answer, msg);
+        // The visitor may have closed the chat while waiting; don't talk to an empty room.
+        // A spoken question gets a spoken answer, then Igris listens for a follow-up.
+        if (!panel.hidden) speak(data.answer, msg, byVoice && voiceOn ? function () {
+          if (voiceOn) setTimeout(function () { startQuestionMic(true); }, 250);
+        } : null);
         history.push({ role: 'user', content: question }, { role: 'assistant', content: data.answer });
       })
       .catch(function (err) {
@@ -779,7 +802,7 @@ function startStepTracker() {
       .then(function () {
         setBusy(false);
         input.focus();
-        if (queuedQuestion) { var next = queuedQuestion; queuedQuestion = null; ask(next); }
+        if (queuedQuestion) { var next = queuedQuestion; queuedQuestion = null; ask(next, true); }
       });
   }
 
