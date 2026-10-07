@@ -139,6 +139,14 @@ NOT_ON_RESUME = re.compile(r"\b(notice period|salary|ctc|compensation|expected p
                            r"is (he|abhi) available|availability|join(ing)? date|immediate joiner|work (remotely|from home)|"
                            r"open to work|looking for (a )?(job|role|change)|how old|his age|date of birth|"
                            r"dob|married|marital|religion|caste)\b", re.I)
+# Typed "Arise" (the voice wake word) or questions about it
+ARISE_PREFIX = re.compile(r"^\s*arise\b[\s,.!:-]*(igris\b[\s,.!:-]*)?", re.I)
+ARISE_HELP = re.compile(r"\b(what is|what's|what does|how (do|does|can) (i|you|it)|how to|is|does|why)\b.*\barise\b|"
+                        r"\barise (is|isn'?t|not|does|doesn'?t|feature|command|button|mode)\b", re.I)
+ARISE_ANSWER = ("I rise, my liege. \u201cArise\u201d is my voice summons: switch on the Arise button at the top "
+                "of this chat, allow the microphone, then close the chat and say \u201cArise\u201d to call me "
+                "back, or \u201cArise\u201d followed by a question to ask it directly. It works in Chrome, Edge "
+                "and Safari. Typing works too: ask me anything about {person}'s experience, skills or projects.")
 SMALL_ACK = re.compile(r"^\s*(ok(ay)?|cool|nice|great|awesome|got it|alright|fine|good|wow|hmm+|interesting)"
                        r"(\s+(thanks|igris))?[\s!.]*$", re.I)
 SMALL_BYE = re.compile(r"^\s*(bye|goodbye|good bye|see you|see ya|later|good night)(\s+igris)?[\s!.]*$", re.I)
@@ -350,6 +358,14 @@ class ResumeChatbot:
 
     def answer(self, question, history=None):
         history = history or []
+        m = ARISE_PREFIX.match(question)
+        if ARISE_HELP.search(question) and not (m and not re.match(r"(is|isn'?t|not|does|doesn'?t)\b",
+                                                                     question[m.end():], re.I)):
+            return {"answer": ARISE_ANSWER.format(person=PERSON), "sources": [], "mode": "greeting"}
+        if m:
+            question = question[m.end():].strip()
+            if not question:
+                return {"answer": ARISE_ANSWER.format(person=PERSON), "sources": [], "mode": "greeting"}
         if GREETING.match(question):
             return {
                 "answer": f"Hi! Ask me anything about {PERSON}'s experience, skills, "
