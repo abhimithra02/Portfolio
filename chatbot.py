@@ -170,7 +170,10 @@ def parse_resume(text):
         if section == "Profile":
             header.append(stripped)
             continue
-        if stripped.startswith("▪"):
+        if stripped.startswith("▪") and section == "Summary" and buf:
+            # Summary sub-bullets ("including: ▪ SageMaker ...") only make sense with their lead-in
+            buf.append(stripped.lstrip("▪ ").strip() + ";")
+        elif stripped.startswith("▪"):
             flush()
             buf.append(stripped.lstrip("▪ ").strip())
         elif section == "Experience" and ROLE_LINE.search(stripped):
