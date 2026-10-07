@@ -74,12 +74,18 @@ SYNONYMS = {
     "hackathon": ["ranked"], "tools": ["skills"], "technologies": ["skills"],
     "tech": ["skills"], "stack": ["skills"], "languages": ["python", "sql"],
     "chatbot": ["rag"], "vision": ["opencv", "cnn"], "deep": ["pytorch", "tensorflow"],
+    "internship": ["intern"], "internships": ["intern"], "trainee": ["intern"],
+    "graduate": ["education", "b.tech"], "graduated": ["education", "b.tech"], "graduation": ["education", "b.tech"],
+    "btech": ["b.tech"], "engineering": ["b.tech"], "diploma": ["education"],
 }
 
 ROLE_LINE = re.compile(r"\|.*\b(19|20)\d{2}\s*$")
+ROLE_PARTS = re.compile(r"^(?P<title>.+?)\s*\|\s*(?P<org>.+?)\s+(?P<dates>[A-Z][a-z]{2} \d{4}\s*[–-]\s*"
+                        r"(?:[A-Z][a-z]{2} \d{4}|Present|Current))$")
 TOKEN = re.compile(r"[a-z0-9][a-z0-9+#.]*[a-z0-9+#]|[a-z0-9]")
-GREETING = re.compile(r"^\s*(hi|hello|hey|hola|namaste|yo|good (morning|afternoon|evening))(\s+igris)?\b[\s!.?]*$", re.I)
-IDENTITY = re.compile(r"\b(who|what) are you\b|\byour name\b|\bwho is igris\b|\bare you (a |an )?(bot|human|ai|robot)\b", re.I)
+GREETING = re.compile(r"^\s*(hi+|hello+|hey+|hola|namaste|yo|good (morning|afternoon|evening))"
+                      r"(\s+(there|igris|everyone|all))?\b[\s!.?]*$", re.I)
+IDENTITY = re.compile(r"\b(who|what) are you\b|\byour name\b|\b(who|what) is igris\b|\bare you (a |an )?(bot|human|ai|robot)\b", re.I)
 # "Tell me about Abhi / him", "who is Abhimithra?": answered with a fixed overview
 ABOUT = re.compile(
     r"^\s*(please\s+)?(can you\s+|could you\s+)?"
@@ -104,6 +110,46 @@ ABOUT_ANSWER = "\n".join([
     "Overall, his experience covers the complete AI lifecycle, from developing Agentic AI, LLM, and "
     "RAG applications to deploying and maintaining reliable production AI systems.",
 ])
+# Looser "give me the big picture" questions that also get the overview
+ABOUT_LOOSE = re.compile(
+    r"\b(tell (me|us) about (yourself|abhi'?s?|abhimithra'?s?|his) (background|profile)|"
+    r"tell (me|us) about yourself|introduce (yourself|him)|"
+    r"(his|abhi'?s|abhimithra'?s) (profile|background|overview|bio)\b|"
+    r"summar(y|i[sz]e)( of)? (his|the) (profile|background|resume|cv|experience)|profile summary|"
+    r"what does (he|abhi|abhimithra) do|why should (we|i|someone|anyone) hire|"
+    r"(his|abhi'?s) (key )?strengths|elevator pitch|strongest skill|(his|area of) expertise|speciali[sz](es|ation|ed)|"
+    r"(good|best) at\b|something interesting|fun fact|highlights?\b|best project|proudest|biggest achievement)", re.I)
+NAME = re.compile(r"^\s*(what is|what's) (his|the candidate'?s) (full )?name\b", re.I)
+YEARS = re.compile(r"\bhow (many years|long|much experience)\b|\byears? of (experience|exp)\b|"
+                   r"\b(total|overall) experience\b", re.I)
+CURRENT_ROLE = re.compile(
+    r"\b(current|present|latest|most recent|recent) (role|job|company|employer|position|designation|work)\b|"
+    r"\bwhere (does|is) (he|abhi|abhimithra) (work|working|employed)\b|\bwho does (he|abhi) work for\b|"
+    r"\b(what is|what's) (his|the) (role|job|job title|designation|position)\b|\bcurrently (working|employed)\b", re.I)
+# The whole question is just "work history" with no specific topic
+HISTORY_WORDS = set("experience experiences work worked working history career companies company job jobs "
+                    "employment employer employers role roles previous past professional timeline "
+                    "summary summarize overview list all tell describe walk through brief his".split())
+CONTACT = re.compile(r"\b(contact|e-?mail|phone|mobile( number)?|reach (him|out)|get in touch|linkedin|github|"
+                     r"hire him|connect with)\b", re.I)
+LOCATION = re.compile(r"\b(where (is|does) (he|abhi|abhimithra) (located|live|based|from|stay)|location|"
+                      r"located|based|which city|where is he)\b", re.I)
+# Things recruiters ask that a resume doesn't answer
+NOT_ON_RESUME = re.compile(r"\b(notice period|salary|ctc|compensation|expected pay|relocat\w*|visa|"
+                           r"is (he|abhi) available|availability|join(ing)? date|immediate joiner|work (remotely|from home)|"
+                           r"open to work|looking for (a )?(job|role|change)|how old|his age|date of birth|"
+                           r"dob|married|marital|religion|caste)\b", re.I)
+SMALL_ACK = re.compile(r"^\s*(ok(ay)?|cool|nice|great|awesome|got it|alright|fine|good|wow|hmm+|interesting)"
+                       r"(\s+(thanks|igris))?[\s!.]*$", re.I)
+SMALL_BYE = re.compile(r"^\s*(bye|goodbye|good bye|see you|see ya|later|good night)(\s+igris)?[\s!.]*$", re.I)
+SMALL_HOW = re.compile(r"^\s*(what'?s up|wassup|sup|how are you( doing)?|how'?s it going)(\s+igris)?[\s?!.]*$", re.I)
+SENIORITY = re.compile(r"\b(fresher|experienced|junior|senior|mid-?level|entry-?level)\b", re.I)
+FIRST_JOB = re.compile(r"\b(first|earliest|initial|oldest) (job|role|company|position|work)\b|"
+                       r"\bstart(ed)? (his )?career\b", re.I)
+BEFORE_THAT = re.compile(r"^\s*(and |ok |okay )?(what about |what did he do )?(before|prior to) (that|this|it)\b[\s?.!]*$", re.I)
+PROG_LANGS = re.compile(r"\b(programming|coding) languages?\b|\blanguages? (does|did|can) he\b|"
+                        r"\bwhich languages?\b|\bwhat languages?\b", re.I)
+KNOWN_LANGS = ["Python", "SQL", "Java", "JavaScript", "TypeScript", "C\\+\\+", "C#", "Go", "Scala", "Kotlin", "Rust"]
 THANKS = re.compile(r"^\s*(thanks|thank you|thank u|thx|ty|cheers)(\s+igris)?\b[\s!.]*$", re.I)
 
 # Broad "list them all" questions: the section keyword is the only meaningful word
@@ -112,8 +158,8 @@ LIST_SECTIONS = {
     "certificate": "Certifications & Achievements", "achievement": "Certifications & Achievements",
     "skill": "Skills", "education": "Education", "qualification": "Education",
 }
-LIST_FILLER = set("built build done made key main list show all other complete different kind type "
-                  "major notable worked work any".split())
+LIST_FILLER = set("built build done made key main list listed show all other complete different kind type "
+                  "major notable worked work any mentioned".split())
 
 
 @dataclass
@@ -226,7 +272,27 @@ class ResumeIndex:
         corpus = [[stem(w) for w in tokenize(f"{c.section} {c.title} {c.text}")] for c in self.chunks]
         self.bm25 = BM25Okapi(corpus)
         self.profile = next((c for c in self.chunks if c.section == "Profile"), None)
+        self.summary = next((c for c in self.chunks if c.section == "Summary"), None)
+        self.roles = [m.groupdict() for m in (ROLE_PARTS.match(c.title) for c in self.chunks
+                      if c.section == "Experience" and c.title and c.title != "Career timeline") if m]
+        self.roles = list({r["title"] + r["org"]: r for r in self.roles}.values())  # unique, in order
+        self.contact = self._parse_contact(self.profile.text if self.profile else "")
         log.info("Resume index built: %d chunks", len(self.chunks))
+
+    @staticmethod
+    def _parse_contact(text):
+        found = {
+            "email": re.search(r"[\w.+-]+@[\w-]+\.[\w.]+", text),
+            "phone": re.search(r"\+?\d[\d ]{9,}\d", text),
+            "linkedin": re.search(r"(?:https?://)?(?:www\.)?linkedin\.com/in/[\w-]+/?", text),
+            "github": re.search(r"(?:https?://)?github\.com/[\w-]+", text),
+            "location": re.search(r"([A-Z][a-z]+, [A-Z][a-z]+)\s*\|", text),
+        }
+        out = {k: (m.group(1) if k == "location" else m.group(0)) for k, m in found.items() if m}
+        for k in ("linkedin", "github"):
+            if k in out and not out[k].startswith("http"):
+                out[k] = "https://" + out[k]
+        return out
 
     def search(self, query, k=TOP_K):
         words = [stem(w) for w in expand(tokenize(query))]
@@ -297,8 +363,20 @@ class ResumeChatbot:
                           "skills, projects, education or how to get in touch.",
                 "sources": [], "mode": "greeting",
             }
-        if ABOUT.match(question):
+        if ABOUT.match(question) or ABOUT_LOOSE.search(question):
             return {"answer": ABOUT_ANSWER, "sources": [{"section": "Summary", "title": ""}], "mode": "about"}
+        direct = self._direct_answer(question, history)
+        if direct:
+            return direct
+        if SMALL_HOW.match(question):
+            return {"answer": f"All quiet in the shadows. Ask me about {PERSON}'s experience, skills, "
+                              "projects or how to get in touch.", "sources": [], "mode": "greeting"}
+        if SMALL_ACK.match(question):
+            return {"answer": f"Ask me anything else about {PERSON}: experience, projects, skills, "
+                              "education or contact details.", "sources": [], "mode": "greeting"}
+        if SMALL_BYE.match(question):
+            return {"answer": f"Farewell. To reach {PERSON}, use the email or LinkedIn links at the top "
+                              "of the page.", "sources": [], "mode": "greeting"}
         if THANKS.match(question):
             return {"answer": f"You're welcome. Ask me anything else about {PERSON}'s background.",
                     "sources": [], "mode": "greeting"}
@@ -324,6 +402,82 @@ class ResumeChatbot:
             return {"answer": self._extractive_list(list_section, hits), "sources": sources[:1], "mode": "retrieval"}
         return {"answer": self._extractive(hits), "sources": sources[:EXTRACTIVE_K], "mode": "retrieval"}
 
+    def _direct_answer(self, question, history=()):
+        """Short, exact answers for the questions visitors ask most, built from the parsed resume."""
+        idx = self.index
+        c = idx.contact
+        email = c.get("email", "")
+
+        def reply(text, section, mode="direct"):
+            return {"answer": text, "sources": [{"section": section, "title": ""}], "mode": mode}
+
+        if NOT_ON_RESUME.search(question):
+            return reply(f"The resume doesn't cover that. The best way to ask is to contact {PERSON} "
+                         f"directly at {email}" + (f" or {c['phone']}" if "phone" in c else "") + ".",
+                         "Profile", "not_on_resume")
+        if NAME.search(question):
+            return reply(f"His name is {PERSON}, an AI / Machine Learning Engineer.", "Profile")
+        if CONTACT.search(question):
+            lines = [f"You can reach {PERSON} here:"]
+            labels = [("email", "Email"), ("phone", "Phone"), ("linkedin", "LinkedIn"),
+                      ("github", "GitHub"), ("location", "Location")]
+            lines += [f"- {label}: {c[k]}" for k, label in labels if k in c]
+            return reply("\n".join(lines), "Profile")
+        if LOCATION.search(question) and "location" in c:
+            return reply(f"{PERSON} is based in {c['location']}.", "Profile")
+        if (YEARS.search(question) or SENIORITY.search(question)) and idx.summary:
+            sentences = re.split(r"(?<=\.)\s+", idx.summary.text)
+            first = " ".join(sentences[:2])
+            if first.startswith(("AI", "ML")):  # resume summaries usually drop the subject
+                first = f"{PERSON} is an {first}"
+            return reply(first, "Summary")
+        if BEFORE_THAT.match(question) and idx.roles:
+            # Find the most recently mentioned role in the conversation and step one back in time
+            for m in reversed(history):
+                text = m["content"].lower()
+                hit = next((i for i, r in enumerate(idx.roles)
+                            if r["org"].split()[0].lower() in text), None)
+                if hit is not None:
+                    if hit + 1 < len(idx.roles):
+                        r = idx.roles[hit + 1]
+                        return reply(f"Before that, he was {r['title']} at {r['org']} ({r['dates']}). "
+                                     "Ask what he did there for details.", "Experience")
+                    return reply(f"That was his first role. Before it, the resume lists his education: "
+                                 "a B.Tech and a PG Diploma in Data Science.", "Education")
+        if FIRST_JOB.search(question) and idx.roles:
+            r = idx.roles[-1]
+            return reply(f"His first role was {r['title']} at {r['org']} ({r['dates']}). "
+                         f"He then moved into data science and machine learning.", "Experience")
+        if PROG_LANGS.search(question):
+            skills = " ".join(ch.text for ch in idx.chunks if ch.section == "Skills")
+            found = []
+            for lang in KNOWN_LANGS:
+                m = re.search(rf"(?<![\w.]){lang}(?![\w])( \(\w+\))?", skills)
+                if m:
+                    found.append(m.group(0))
+            if found:
+                return reply("The resume lists " + (" and ".join(found) if len(found) < 3
+                             else ", ".join(found[:-1]) + " and " + found[-1])
+                             + " as programming languages"
+                             + (", with Python as his main one." if found[0].startswith("Python") else "."), "Skills")
+        if CURRENT_ROLE.search(question) and idx.roles:
+            r = idx.roles[0]
+            return reply(f"His most recent role is {r['title']} at {r['org']} ({r['dates']}). "
+                         "There he built an agentic AI platform for website QA and a RAG document "
+                         "chatbot, and ran the AWS deployment. Ask about any of these for details.",
+                         "Experience")
+        words = {w for w in TOKEN.findall(question.lower())} - STOPWORDS
+        if words and words <= HISTORY_WORDS and words & {"experience", "experiences", "work", "worked",
+                                                          "history", "career", "companies", "jobs",
+                                                          "employment", "roles", "timeline"} and idx.roles:
+            lines = [f"{PERSON}'s work history, most recent first:"]
+            lines += [f"- {r['title']}, {r['org']} ({r['dates']})" for r in idx.roles]
+            if idx.summary:
+                first = re.split(r"(?<=\.)\s+", idx.summary.text)[0]
+                lines.append(f"In total, {PERSON} is an {first}" if first.startswith(("AI", "ML")) else first)
+            return reply("\n".join(lines), "Experience")
+        return None
+
     def _extractive_list(self, section, hits):
         if section == "Projects":
             lines = [f"The resume lists {len(hits)} key projects:"]
@@ -336,11 +490,23 @@ class ResumeChatbot:
 
     def _extractive(self, hits):
         if not hits:
-            return ("I couldn't find that in the resume. Try asking about experience, "
-                    "skills, projects, education, certifications or contact details.")
+            email = self.index.contact.get("email")
+            return ("I couldn't find that in the resume. Try asking about experience, skills, "
+                    "projects, education, certifications or contact details"
+                    + (f", or contact {PERSON} at {email}." if email else "."))
+        best, top_section = hits[0][1], hits[0][0].section
+        # Drop weak matches; they only add noise. Short list sections (education, certifications)
+        # keep their siblings so "which certifications" still lists them all.
+        keep_section = top_section if top_section in ("Education", "Certifications & Achievements") else None
+        hits = [(c, s) for c, s in hits if s >= best * 0.6 or c.section == keep_section]
         lines = ["Here's what the resume says:"]
+        hits = [h for i, h in enumerate(hits) if i == 0 or h[0].section != "Profile"]
         for c, _ in hits[:EXTRACTIVE_K]:
-            label = c.section + (f" · {c.title}" if c.title and c.title not in c.text[:len(c.title) + 2] else "")
+            title = c.title
+            m = ROLE_PARTS.match(title) if c.section == "Experience" else None
+            if m:
+                title = f"{m['title']}, {m['org']}"
+            label = c.section + (f" · {title}" if title and title not in c.text[:len(title) + 2] else "")
             lines.append(f"- {label}: {c.text}")
         return "\n".join(lines)
 
