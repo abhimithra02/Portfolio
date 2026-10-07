@@ -80,6 +80,30 @@ ROLE_LINE = re.compile(r"\|.*\b(19|20)\d{2}\s*$")
 TOKEN = re.compile(r"[a-z0-9][a-z0-9+#.]*[a-z0-9+#]|[a-z0-9]")
 GREETING = re.compile(r"^\s*(hi|hello|hey|hola|namaste|yo|good (morning|afternoon|evening))(\s+igris)?\b[\s!.?]*$", re.I)
 IDENTITY = re.compile(r"\b(who|what) are you\b|\byour name\b|\bwho is igris\b|\bare you (a |an )?(bot|human|ai|robot)\b", re.I)
+# "Tell me about Abhi / him", "who is Abhimithra?": answered with a fixed overview
+ABOUT = re.compile(
+    r"^\s*(please\s+)?(can you\s+|could you\s+)?"
+    r"(tell (me|us)( a bit| more)? about|who is|who's|introduce|describe|about|"
+    r"(give|share)( me| us)?( an?)? (overview|summary|intro|introduction) (of|about))\s+"
+    r"(abhi|abhimithra|abhi mithra|him|he|mr\.? peddi)(\s+peddi)?\s*(please)?[\s?.!]*$",
+    re.I)
+ABOUT_ANSWER = "\n".join([
+    "He is an AI/ML Engineer with 7+ years of overall experience, including 5+ years of experience "
+    "in Machine Learning, Deep Learning, Generative AI, and production AI systems.",
+    "In his current role, he primarily works on Agentic AI and LLM-based applications. One of his key "
+    "projects is an agentic QA automation platform where LLM agents use function calling to orchestrate "
+    "multiple validation tools, including SEO, broken-link, content-quality, and accessibility checks. "
+    "He has also implemented deterministic fallback mechanisms and human-in-the-loop validation to "
+    "improve reliability.",
+    "He has also worked on a RAG-based document intelligence system using LangChain, Pinecone, "
+    "embeddings, and hybrid retrieval with vector search and BM25, which reduced manual document "
+    "search time by more than 80%.",
+    "On the deployment side, he has experience with Python, Flask, AWS services such as EC2, Lambda, "
+    "S3, RDS, and SageMaker, along with IAM, encryption, logging, monitoring, and model retraining "
+    "pipelines.",
+    "Overall, his experience covers the complete AI lifecycle, from developing Agentic AI, LLM, and "
+    "RAG applications to deploying and maintaining reliable production AI systems.",
+])
 THANKS = re.compile(r"^\s*(thanks|thank you|thank u|thx|ty|cheers)(\s+igris)?\b[\s!.]*$", re.I)
 
 # Broad "list them all" questions: the section keyword is the only meaningful word
@@ -273,6 +297,8 @@ class ResumeChatbot:
                           "skills, projects, education or how to get in touch.",
                 "sources": [], "mode": "greeting",
             }
+        if ABOUT.match(question):
+            return {"answer": ABOUT_ANSWER, "sources": [{"section": "Summary", "title": ""}], "mode": "about"}
         if THANKS.match(question):
             return {"answer": f"You're welcome. Ask me anything else about {PERSON}'s background.",
                     "sources": [], "mode": "greeting"}
