@@ -219,7 +219,7 @@ All content is in `templates/index.html`:
   python -c "from PIL import Image; Image.open('static/img/profile.webp').convert('RGB').resize((320, 320)).save('static/img/profile-320.webp', quality=82)"
   ```
 
-- **Igris's suggested questions:** the buttons inside `#chatSuggestions` in `templates/index.html`. Igris's replies to greetings, "Who are you?" and "Thanks" are in `chatbot.py`.
+- **Igris's suggested questions:** the buttons inside `#chatSuggestions` in `templates/index.html`. Igris's replies to greetings, "Who are you?", "Thanks" and "Tell me about Abhi" (`ABOUT_ANSWER`) are in `chatbot.py`.
 - **Colours:** theme colours are CSS variables at the top of `static/css/style.css` (`:root` for dark, `[data-theme="light"]` for light). Text colours were chosen to meet WCAG AA contrast (4.5:1); re-check contrast if you change them.
 
 ## Quality checks
