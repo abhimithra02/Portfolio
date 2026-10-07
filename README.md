@@ -163,9 +163,11 @@ The **Igris** button (bottom right, a knight's helmet with a red plume) opens a 
 2. **Retrieve:** each question is ranked against the chunks with BM25, plus a small synonym list (for example "college" → education). Dotted terms match by their parts ("React" finds "React.js"), and simple plurals are folded ("hackathons" finds "Hackathon"). For short follow-ups, the previous question is folded in.
    - Broad questions that only name a section ("What projects has Abhimithra built?", "What certifications…?") return every item in that section rather than the top matches.
    - Greetings, "Who are you?" and "Thanks" get short replies from Igris without searching the resume.
+   - "Tell me about Abhi", "Summarize his profile" or "Why should we hire him?" get a fixed overview (`ABOUT_ANSWER`).
+   - The most common questions get direct answers built from the parsed resume, before search and without the LLM: contact details, location, years of experience, current role and work history. Questions a resume can't answer (notice period, salary, relocation, availability) point to the email address and phone number.
 3. **Answer:**
    - **With `ANTHROPIC_API_KEY` set:** Claude (`claude-opus-5-5` at low effort; override with `CHAT_MODEL`) writes a short answer from the retrieved chunks only. The prompt tells it not to invent facts and to point to the email address when the resume doesn't say. The request opts into server-side refusal fallbacks.
-   - **Without a key, or if the API call fails:** the top matching resume lines are returned as they are, so the chatbot always works and costs nothing.
+   - **Without a key, or if the API call fails:** the top matching resume lines (up to three, dropping weak matches) are returned as they are, so the chatbot always works and costs nothing.
 
 ### Voice
 
