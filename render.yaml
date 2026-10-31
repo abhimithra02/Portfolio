@@ -1,6 +1,7 @@
 services:
   - type: web
-    name: abhimithra-portfolio
+    # Also sets the free web address: https://abhimithra.onrender.com (if the name is free on Render)
+    name: abhimithra
     runtime: python
     buildCommand: pip install -r requirements.txt
     # Longer timeout leaves room for the chatbot's LLM call (client timeout 25s, one retry)

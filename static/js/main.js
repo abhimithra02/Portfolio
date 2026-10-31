@@ -407,12 +407,40 @@ function startStepTracker() {
   var speakingMsg = null;
   var utterances = [];   // Chrome can drop onend for utterances nothing references
 
+  var voiceFailed = false;   // set when the chosen voice errors; then the browser default is used
   function pickVoice() {
+    if (voiceFailed) return null;
     var voices = synth.getVoices().filter(function (v) { return /^en/i.test(v.lang); });
     // A deep British voice suits a shadow knight; fall back to any English voice
     return voices.filter(function (v) { return /UK English Male|Daniel|Arthur|George|Ryan/i.test(v.name); })[0]
       || voices.filter(function (v) { return /en[-_]GB/i.test(v.lang); })[0]
       || voices[0] || null;
+  }
+
+  // iPhone/iPad (and some Android browsers) only allow speech that starts during a tap.
+  // Answers arrive later, so speak a silent utterance on the visitor's first tap to unlock it.
+  var speechUnlocked = false;
+  function unlockSpeech() {
+    if (!synth || speechUnlocked) return;
+    speechUnlocked = true;
+    try {
+      synth.resume();
+      var u = new SpeechSynthesisUtterance(' ');
+      u.volume = 0;
+      synth.speak(u);
+    } catch (e) {}
+  }
+
+  // Chrome cuts off utterances after about 15 seconds; keep each piece short
+  function splitLong(part) {
+    if (part.length <= 160) return [part];
+    var out = [], cur = '';
+    part.split(/,\s+/).forEach(function (bit) {
+      if (cur && (cur + ', ' + bit).length > 160) { out.push(cur + ','); cur = bit; }
+      else cur = cur ? cur + ', ' + bit : bit;
+    });
+    if (cur) out.push(cur);
+    return out;
   }
 
   // Answers are written for reading; smooth out symbols that sound odd aloud
@@ -435,23 +463,45 @@ function startStepTracker() {
     stopSpeaking();
     // Queue sentence-sized pieces: Chrome silently stops long single utterances.
     // (No regex lookbehind here: older Safari can't parse it, which would break the whole script.)
-    var parts = forSpeech(text).replace(/([.!?;])\s+/g, '$1\n').split('\n')
-      .map(function (p) { return p.trim(); })
-      .filter(Boolean);
+    var parts = [];
+    forSpeech(text).replace(/([.!?;])\s+/g, '$1\n').split('\n').forEach(function (p) {
+      p = p.trim();
+      if (p) parts = parts.concat(splitLong(p));
+    });
     if (!parts.length) { if (onDone) onDone(); return; }
     var voice = pickVoice();
     speakingMsg = msg;
+    var queued = utterances;
+    var finished = false;
+    function finish() {
+      if (finished) return;
+      finished = true;
+      if (speakingMsg === msg) { msg.classList.remove('speaking'); speakingMsg = null; }
+      if (onDone) onDone();
+    }
+    synth.resume();   // Chrome can be left paused (e.g. after the tab was in the background)
     parts.forEach(function (part, i) {
       var u = new SpeechSynthesisUtterance(part);
-      utterances.push(u);
+      queued.push(u);
       if (voice) { u.voice = voice; u.lang = voice.lang; }
       u.rate = 0.95;
       u.pitch = 0.8;
+      u.volume = 1;
       if (i === 0) u.onstart = function () { if (speakingMsg === msg) msg.classList.add('speaking'); };
-      if (i === parts.length - 1) u.onend = u.onerror = function () {
-        if (speakingMsg === msg) { msg.classList.remove('speaking'); speakingMsg = null; }
-        if (onDone) onDone();
+      u.onerror = function (e) {
+        if (queued !== utterances) return;   // cancelled by a newer reply
+        // Network voices (e.g. Chrome's "Google UK English Male") fail offline or when blocked;
+        // retry the rest of the answer once with the browser's built-in voice
+        if (voice && !voiceFailed && e.error !== 'interrupted' && e.error !== 'canceled') {
+          voiceFailed = true;
+          finished = true;
+          synth.cancel();
+          speak(parts.slice(i).join(' '), msg, onDone);
+          return;
+        }
+        if (i === parts.length - 1 || e.error !== 'interrupted') finish();
       };
+      if (i === parts.length - 1) u.onend = finish;
       synth.speak(u);
     });
   }
@@ -523,10 +573,12 @@ function startStepTracker() {
     rec.continuous = false;
     rec.maxAlternatives = 1;
     var heard = '';
+    var lastHeard = '';   // latest partial result; Safari often ends without a final one
 
     rec.onstart = function () {
       listening = true;
       heard = '';
+      lastHeard = '';
       micBtn.setAttribute('aria-pressed', 'true');
       micBtn.setAttribute('aria-label', 'Stop listening');
       input.value = '';
@@ -537,6 +589,7 @@ function startStepTracker() {
       for (var i = 0; i < e.results.length; i++) text += e.results[i][0].transcript;
       input.value = text;
       if (e.results[e.results.length - 1].isFinal) heard = text;
+      lastHeard = text;
     };
     rec.onerror = function (e) {
       var msg = {
@@ -556,11 +609,14 @@ function startStepTracker() {
       micBtn.setAttribute('aria-pressed', 'false');
       micBtn.setAttribute('aria-label', 'Ask by voice');
       input.placeholder = 'Ask about skills, experience…';
-      if (heard.trim()) ask(heard, true);
+      var said = (heard || lastHeard).trim();
+      heard = lastHeard = '';
+      if (said) ask(said, true);
     };
 
     micBtn.hidden = false;
     micBtn.addEventListener('click', function () {
+      unlockSpeech();
       if (listening) { rec.stop(); return; }
       if (busy) return;
       stopSpeaking();
@@ -677,6 +733,7 @@ function startStepTracker() {
 
     wakeToggle.hidden = false;
     wakeToggle.addEventListener('click', function () {
+      unlockSpeech();
       if (wakeOn) {
         setWake(false);
         addMessage('bot', 'Understood. I will no longer listen for \u201cArise\u201d.');
@@ -741,7 +798,7 @@ function startStepTracker() {
     launcher.focus();
     setTimeout(startWake, 300);
   }
-  launcher.addEventListener('click', open);
+  launcher.addEventListener('click', function () { unlockSpeech(); open(); });
   closeBtn.addEventListener('click', close);
   panel.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') close();
@@ -846,11 +903,12 @@ function startStepTracker() {
 
   form.addEventListener('submit', function (e) {
     e.preventDefault();
+    unlockSpeech();
     ask(input.value);
   });
   if (suggestions) {
     suggestions.addEventListener('click', function (e) {
-      if (e.target.tagName === 'BUTTON') ask(e.target.textContent);
+      if (e.target.tagName === 'BUTTON') { unlockSpeech(); ask(e.target.textContent); }
     });
   }
 })();

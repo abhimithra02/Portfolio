@@ -33,6 +33,17 @@ FALLBACK_MODELS = {"claude-opus-5-5", "claude-opus-5", "claude-fable-5-1", "clau
 TOP_K = 6
 EXTRACTIVE_K = 3
 
+# Newer than the resume PDF: lines inserted right after a section heading, written the way
+# the PDF writes them. Each line is skipped once the PDF itself contains it, so an updated
+# resume never produces duplicates.
+RESUME_ADDITIONS = {
+    "PROFESSIONAL EXPERIENCE": [
+        "Senior AI Engineer | Asakta Electronics and Communications Private Limited, Hyderabad Oct 2026 – Present",
+        "▪ Full-time, on-site role in Hyderabad, India, building AI solutions with Python "
+        "(Artificial Intelligence, Python).",
+    ],
+}
+
 # Section headings as they appear in the PDF, mapped to friendly names
 SECTIONS = {
     "PROFESSIONAL SUMMARY": "Summary",
@@ -79,7 +90,7 @@ SYNONYMS = {
     "btech": ["b.tech"], "engineering": ["b.tech"], "diploma": ["education"],
 }
 
-ROLE_LINE = re.compile(r"\|.*\b(19|20)\d{2}\s*$")
+ROLE_LINE = re.compile(r"\|.*\b((19|20)\d{2}|Present|Current)\s*$")
 ROLE_PARTS = re.compile(r"^(?P<title>.+?)\s*\|\s*(?P<org>.+?)\s+(?P<dates>[A-Z][a-z]{2} \d{4}\s*[–-]\s*"
                         r"(?:[A-Z][a-z]{2} \d{4}|Present|Current))$")
 TOKEN = re.compile(r"[a-z0-9][a-z0-9+#.]*[a-z0-9+#]|[a-z0-9]")
@@ -96,7 +107,8 @@ ABOUT = re.compile(
 ABOUT_ANSWER = "\n".join([
     "He is an AI/ML Engineer with 7+ years of overall experience, including 5+ years of experience "
     "in Machine Learning, Deep Learning, Generative AI, and production AI systems.",
-    "In his current role, he primarily works on Agentic AI and LLM-based applications. One of his key "
+    "He is currently a Senior AI Engineer at Asakta Electronics and Communications in Hyderabad.",
+    "In his previous role at vSplash Techlabs, he worked primarily on Agentic AI and LLM-based applications. One of his key "
     "projects is an agentic QA automation platform where LLM agents use function calling to orchestrate "
     "multiple validation tools, including SEO, broken-link, content-quality, and accessibility checks. "
     "He has also implemented deterministic fallback mechanisms and human-in-the-loop validation to "
@@ -271,10 +283,22 @@ def parse_resume(text):
     return chunks
 
 
+def add_updates(text):
+    """Insert RESUME_ADDITIONS under their section headings, skipping lines the PDF already has."""
+    lines = text.splitlines()
+    flat = _clean(text)
+    for heading, extra in RESUME_ADDITIONS.items():
+        new = [l for l in extra if _clean(l.lstrip("▪ ")) not in flat]
+        at = next((i for i, l in enumerate(lines) if l.strip() == heading), None)
+        if new and at is not None:
+            lines[at + 1:at + 1] = new
+    return "\n".join(lines)
+
+
 class ResumeIndex:
     def __init__(self, path=RESUME_PATH):
         reader = PdfReader(path)
-        text = "\n".join(page.extract_text() or "" for page in reader.pages)
+        text = add_updates("\n".join(page.extract_text() or "" for page in reader.pages))
         self.chunks = parse_resume(text)
         # Index each chunk with its section and title so "projects", "education" etc. match
         corpus = [[stem(w) for w in tokenize(f"{c.section} {c.title} {c.text}")] for c in self.chunks]
@@ -478,10 +502,17 @@ class ResumeChatbot:
                              + (", with Python as his main one." if found[0].startswith("Python") else "."), "Skills")
         if CURRENT_ROLE.search(question) and idx.roles:
             r = idx.roles[0]
-            return reply(f"His most recent role is {r['title']} at {r['org']} ({r['dates']}). "
-                         "There he built an agentic AI platform for website QA and a RAG document "
-                         "chatbot, and ran the AWS deployment. Ask about any of these for details.",
-                         "Experience")
+            current = re.search(r"Present|Current", r["dates"])
+            text = (f"He is currently {r['title']} at {r['org']} ({r['dates']})." if current else
+                    f"His most recent role is {r['title']} at {r['org']} ({r['dates']}).")
+            prev = idx.roles[1] if current and len(idx.roles) > 1 else (None if current else r)
+            if prev:
+                if current:
+                    text += f" Before that, he was {prev['title']} at {prev['org']} ({prev['dates']})."
+                if prev["org"].startswith("vSplash"):
+                    text += (" There he built an agentic AI platform for website QA and a RAG document "
+                             "chatbot, and ran the AWS deployment.")
+            return reply(text + " Ask about any of these for details.", "Experience")
         words = {w for w in TOKEN.findall(question.lower())} - STOPWORDS
         if words and words <= HISTORY_WORDS and words & {"experience", "experiences", "work", "worked",
                                                           "history", "career", "companies", "jobs",
