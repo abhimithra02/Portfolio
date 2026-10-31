@@ -127,6 +127,8 @@ Pushing to `main` redeploys the service. The settings are in `render.yaml`:
 | Python version | 3.11.0 |
 | `ANTHROPIC_API_KEY` | Optional; set in the Render dashboard to turn on LLM-written chatbot answers |
 
+**Web address:** the service is named `abhimithra`, which gives https://abhimithra.onrender.com. Render chooses a service's `onrender.com` address when the service is created. Renaming an existing service does not change its address, so to get this address, create a new web service from this repo (New → Blueprint, or New → Web Service) named `abhimithra`. If the name is already taken, Render adds a random suffix. Addresses always end in `.onrender.com`; for your own domain (e.g. `abhimithra.com`), buy it and add it under the service's Settings → Custom Domains.
+
 The free Render plan puts the service to sleep after 15 minutes without traffic. The next visit then shows a "Service waking up" screen for 30–60 seconds. To avoid it, use an uptime checker (for example UptimeRobot) to load the URL every 10 minutes, or upgrade to a paid plan.
 
 `app.py` uses `ProxyFix`, so absolute URLs such as `og:image` and `og:url` come out as `https://` behind Render's proxy.
@@ -196,7 +198,9 @@ Igris can listen and talk back, like a voice assistant. Both parts use the brows
 
 Every response also carries basic security headers: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, and a `Permissions-Policy` that allows the microphone for this site only (needed for voice).
 
-Replacing the resume PDF updates the chatbot on the next deploy. If you rename the resume's section headings, update `SECTIONS` in `chatbot.py`.
+Replacing the resume PDF updates the chatbot on the next deploy. If you rename the resume's section headings, update `SECTIONS` in `chatbot.py`. Facts newer than the PDF (currently the Senior AI Engineer role at Asakta) live in `RESUME_ADDITIONS` in `chatbot.py`; each line is ignored once the PDF contains it, so they can stay after the resume is updated.
+
+**Voice reliability:** iPhones and iPads only allow speech that starts during a tap, so the first tap in the chat (open, send, mic, a suggestion) unlocks speech with a silent utterance. Long sentences are split into pieces under 160 characters, because Chrome stops speaking after about 15 seconds. If the chosen voice fails (Chrome's online "Google" voices fail offline), the rest of the answer is read with the browser's default voice. If the browser ends listening without a final transcript, as Safari often does, the last partial transcript is sent.
 
 Set these in a local `.env` file (see `.env.example`) or, on Render, under **Environment**.
 
